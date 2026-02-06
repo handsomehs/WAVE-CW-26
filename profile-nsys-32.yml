@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-nsys-32-
+  labels:
+    kueue.x-k8s.io/queue-name: eidf018ns-profiling-queue
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 600
+      containers:
+      - name: run
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+        command:
+          - bash
+          - -lc
+          - >-
+            nsys profile -t cuda,nvtx,osrt -o awave-nsys-32-$(date +%Y%m%d-%H%M%S) --force-overwrite=true
+            build-dev/awave -shape 32,32,32 -nsteps 200 -out_period 100 /tmp/awave-profile-32
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 8Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
+

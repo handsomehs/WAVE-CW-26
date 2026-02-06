@@ -147,3 +147,25 @@
     - `cuda_gpu_kern_sum`：CUDA 内域 `step_kernel_interior` ≈ 288 us/step；OpenMP 内域 kernel ≈ 312 us/step；边界核单次约 15–19 us。
   - `awave-ncu-20260206-095915.ncu-rep`（Roofline，CUDA 内域 kernel）：
     - Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**，Workload achieved **~9% FP64 peak** → 仍为典型带宽受限 stencil。
+
+## 12. 规模扫描（32--384）与小规模启动开销 Profiling（已完成并记录到报告素材）
+- **原理**：
+  - 报告需要覆盖 32--1000 的规模范围；同时需要解释“为什么小规模性能低、大规模接近带宽上限”。
+  - 对小规模（32^3）来说，每 step 的 kernel 极短，launch 与 offload runtime 开销会成为主要瓶颈，必须用 nsys 证据支撑结论。
+- **实现细节（测试/流程）**：
+  - 新增 sweep job：`run-sweep-a100.yml`（完整 A100 上按多个 shape 顺序运行，并在每次运行后删除 `/tmp` 输出，避免占满空间）。
+  - 新增小规模 profiling job：`profile-nsys-32.yml`（`nsys` 采集 32^3，便于定位 launch/运行时开销占比）。
+- **正确性**：sweep 覆盖的所有规模 CUDA/OMP 均保持 `0 differences`。
+- **规模扫描结果（mean SU/s，完整 A100，最终计时口径）**：
+  - 32^3（nsteps=200,out_period=100）：CUDA ≈ 2.49e9，OpenMP ≈ 8.83e8。
+  - 64^3（nsteps=200,out_period=100）：CUDA ≈ 1.54e10，OpenMP ≈ 5.75e9。
+  - 96^3（nsteps=200,out_period=100）：CUDA ≈ 3.42e10，OpenMP ≈ 1.51e10。
+  - 128^3（nsteps=20,out_period=10）：CUDA ≈ 3.02e10，OpenMP ≈ 2.24e10。
+  - 192^3（nsteps=20,out_period=10）：CUDA ≈ 4.33e10，OpenMP ≈ 3.65e10。
+  - 256^3（nsteps=20,out_period=10）：CUDA ≈ 4.93e10，OpenMP ≈ 4.44e10。
+  - 384^3（nsteps=20,out_period=10）：CUDA ≈ 5.32e10，OpenMP ≈ 4.97e10。
+- **profiling 证据（小规模 32^3）**：
+  - `awave-nsys-32-20260206-101912.nsys-rep`：
+    - `nvtx_sum`：CUDA `run` 每 chunk（100 steps）≈ 1.56–1.71 ms，`copyback` 每 chunk ≈ 0.13 ms。
+    - `cuda_gpu_kern_sum`：CUDA 三个 stencil kernel 均约 **~3 us/launch**；OpenMP 的三个 offload kernel 约 **~3.6 us/launch**（各 200 次）。
+  - 结论：小规模主要受 launch/offload 运行时开销影响；大规模则能更好地逼近带宽上限（与 256^3 的 ncu roofline 一致）。

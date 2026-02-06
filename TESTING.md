@@ -107,6 +107,10 @@ For plots/tables, run a small matrix of problem sizes. Example:
 - 128, 192, 256: core performance range
 - 384, 512: if memory/time allow
 
+Convenience jobs:
+- `run-sweep-a100.yml`: runs a small size sweep on full A100s and deletes `/tmp` outputs after each case.
+- `profile-nsys-32.yml`: nsys profile for `32^3` to highlight small-problem launch/runtime overhead.
+
 Guidelines:
 - Keep `out_period` large enough to avoid excessive output volume.
 - Increase `nsteps` for small shapes to reduce launch/overhead noise.
@@ -151,4 +155,3 @@ No `git push` (per current workflow).
 - KGPU templates using `$(...)` inside `bash -c`:
   - `$(...)` is *command substitution* in bash (not an environment variable).
   - Use a literal path like `build-dev/awave`, or a proper shell variable like `$KGPU_JOB_NAME`.
-

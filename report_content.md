@@ -44,6 +44,15 @@
   - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.21e8，CUDA ≈ 5.55e9，OpenMP ≈ 3.42e9。
   - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.20e8，CUDA ≈ 3.08e10，OpenMP ≈ 2.24e10。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.87e8，CUDA ≈ 4.93e10，OpenMP ≈ 4.42e10。
+- **规模扫描（完整 A100，最终计时口径，mean SU/s）**：
+  - 说明：32^3/64^3/96^3 使用 `nsteps=200,out_period=100`；其余使用 `nsteps=20,out_period=10`（均为 2 chunks，输出写入 `/tmp` 并在 sweep job 中删除）。
+  - 32^3：CPU ≈ 3.87e8，CUDA ≈ 2.49e9，OpenMP ≈ 8.83e8。
+  - 64^3：CPU ≈ 3.49e8，CUDA ≈ 1.54e10，OpenMP ≈ 5.75e9。
+  - 96^3：CPU ≈ 3.37e8，CUDA ≈ 3.42e10，OpenMP ≈ 1.51e10。
+  - 128^3：CPU ≈ 3.08e8，CUDA ≈ 3.02e10，OpenMP ≈ 2.24e10。
+  - 192^3：CPU ≈ 2.83e8，CUDA ≈ 4.33e10，OpenMP ≈ 3.65e10。
+  - 256^3：CPU ≈ 3.03e8，CUDA ≈ 4.93e10，OpenMP ≈ 4.44e10。
+  - 384^3：CPU ≈ 2.92e8，CUDA ≈ 5.32e10，OpenMP ≈ 4.97e10。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
@@ -58,6 +67,15 @@
   - `nsys stats --report nvtx_sum`（NVTX）要点：
     - `run`（4 steps 纯计算）≈ 1.72 ms
     - `copyback`（仅 CUDA 端 D2H）≈ 36.6 ms
+- **Nsight Systems（nsys，小规模启动开销证据）**：
+  - profile 文件：`awave-nsys-32-20260206-101912.nsys-rep`（A100，shape=32^3，nsteps=200,out_period=100）
+  - `nvtx_sum`：
+    - `run`（每 chunk 100 steps）≈ 1.56–1.71 ms
+    - `copyback`（每 chunk）≈ 0.13 ms
+  - `cuda_gpu_kern_sum`：
+    - CUDA 内域/边界核均为 **~3 us/launch** 量级（200 次）
+    - OpenMP 的 3 个 offload kernel 也在 **~3.6 us/launch** 量级（200 次）
+  - 结论：小规模下 kernel 本身非常短，launch/运行时开销占比高；解释了 32^3/64^3 上 CUDA/OMP 的 SU/s 明显低于大规模带宽饱和区间。
 - **Nsight Compute（ncu，聚焦 CUDA 内域 kernel）**：
   - profile 文件：`awave-ncu-20260206-095915.ncu-rep`
   - Roofline（`SpeedOfLight_RooflineChart`）核心数据：
