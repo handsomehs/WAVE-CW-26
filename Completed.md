@@ -25,8 +25,14 @@
 - **效果**：完成项目文档骨架，后续可在每个里程碑更新。
 
 ## 4. 未完成部分（明确列出）
-- CUDA 实现：未开始。
-- OpenMP offload 实现：未开始。
 - 测试与性能评测：未执行。
 - Nsight profiling：未执行。
 - 报告撰写：未开始。
+
+## 5. CUDA / OpenMP 基线实现（已完成，未测试）
+- **原理**：实现数据常驻、指针轮换的 GPU 版本，保证与 CPU 的数值一致性。
+- **实现细节**：
+  - CUDA：在 `wave_cuda.cu` 中增加设备内存分配与拷贝、kernel 计算、指针轮换；`run()` 末同步回传 `u.now/u.prev`。
+  - OpenMP：在 `wave_omp.cpp` 中使用 `omp_target_alloc/omp_target_memcpy` 常驻数据，`target teams distribute parallel for` 执行 kernel，指针轮换后回传输出。
+  - 两者均保留 CPU fallback（无设备时用 CPU step），以便在无 GPU 环境跑通。
+- **效果**：代码已完成基础 GPU 路径，但**尚未测试**，后续需在 A100 上验证正确性与性能。
