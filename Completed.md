@@ -70,3 +70,22 @@
   - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.74e9，OpenMP mean ≈ 4.07e9（较基线提升）。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.53e9，OpenMP mean ≈ 4.50e9（稳定高带宽）。
   - 备注：当 `out_period` 很小（例如 2）时，`run()` 末的 D2H 回传在计时内，可能显著拉低 SU/s；因此性能测试建议使用较大的 chunk 长度（如 out_period=10）。
+
+## 8. 系数压缩：`cs2`(1D) + `damp`(2D)（已完成并实测）
+- **原理**：
+  - `cs2(i,j,k)` 仅依赖深度 k（由声速剖面决定），在 i/j 方向上重复；`damp(i,j,k)` 仅依赖 (i,j)，在 k 方向上重复。
+  - 将两者在 GPU 侧压缩为更低维度数组（`cs2_k[k]`、`damp_xy[i,j]`）可：
+    - 显著减少系数数组的设备端存储与 H2D 拷贝体积。
+    - 让系数更容易驻留在缓存中，降低每点系数读取的有效带宽开销。
+    - 对阻尼边界层：同一 (i,j) 下不同 k 线程读取同一 `damp_xy`，硬件可广播，减少冗余访存。
+- **实现细节**：
+  - CUDA（`wave_cuda.cu`）：
+    - 初始化时在主机上构造 `std::vector<double> cs2_k(nz)`（取 `cs2(0,0,k)`）与 `damp_xy(nx*ny)`（取 `damp(i,j,0)`），拷贝到设备。
+    - kernel 侧用 `cs2_k[k]` 与 `damp_xy[i*ny+j]` 替代原 3D 系数数组读取。
+  - OpenMP offload（`wave_omp.cpp`）：
+    - 同样构造 `cs2_k` / `damp_xy` 并用 `omp_target_memcpy` 传至设备常驻。
+    - 更新循环与分域 kernel 改用压缩系数寻址。
+- **正确性与效果（实测）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA/OMP 仍为 0 differences。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.23e9，OpenMP mean ≈ 3.62e9（该规模下结果有一定波动，需更多重复实验确认趋势）。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 5.50e9，OpenMP mean ≈ 5.14e9（相比未压缩约 4.5e9 有明显提升）。

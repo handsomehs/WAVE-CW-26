@@ -35,6 +35,10 @@
   - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.21e8，CUDA ≈ 2.02e9，OpenMP ≈ 1.71e9。
   - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.16e8，CUDA ≈ 4.74e9，OpenMP ≈ 4.07e9。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.90e8，CUDA ≈ 4.53e9，OpenMP ≈ 4.50e9。
+- **系数压缩后的新增数据（mean SU/s，cs2->1D, damp->2D）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.19e8，CUDA ≈ 2.16e9，OpenMP ≈ 1.65e9。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.52e8，CUDA ≈ 4.23e9，OpenMP ≈ 3.62e9。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.94e8，CUDA ≈ 5.50e9，OpenMP ≈ 5.14e9。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
