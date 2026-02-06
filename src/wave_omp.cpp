@@ -65,6 +65,14 @@ struct OmpImplementationData {
         omp_target_memcpy(d_damp_xy, damp_xy.data(),
                           static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * sizeof(double),
                           0, 0, device, host);
+
+        // Warm up the offload runtime and code path so one-time initialisation
+        // does not pollute the first timed chunk in `run()`.
+        double* u_now = d_now;
+        #pragma omp target teams distribute parallel for device(device) is_device_ptr(u_now)
+        for (int idx = 0; idx < 1; ++idx) {
+            u_now[idx] = u_now[idx];
+        }
     }
     ~OmpImplementationData() {
         if (d_prev) omp_target_free(d_prev, device);

@@ -25,7 +25,6 @@
 - **效果**：完成项目文档骨架，后续可在每个里程碑更新。
 
 ## 4. 未完成部分（明确列出）
-- Nsight profiling：未执行。
 - 报告撰写：未开始。
 
 ## 5. CUDA / OpenMP 基线实现（已完成并通过基础测试）
@@ -127,3 +126,24 @@
   - `awave-nsys-20260206-095213.nsys-rep`：
     - NVTX：`run` ≈ 1.79 ms（4 steps 纯计算），`copyback` ≈ 43.8 ms（仅 CUDA 端回传）→ 回传远大于计算核。
     - `cuda_gpu_mem_time_sum`：D2H 总计约 81 ms（4 次 * ~137 MB，每次 ~20 ms，含 CUDA 与 OpenMP 回传）。
+
+## 11. OpenMP Offload 预热以消除首个 chunk 初始化开销（已完成并实测 + profiling）
+- **原理**：
+  - OpenMP target offload 的首次进入通常会触发一次性的运行时初始化/设备上下文建立/JIT 等开销。
+  - 本项目计时以 chunk 为单位（`run(len)`），若首次 offload 的一次性开销落在第一个 chunk 内，会导致 OpenMP 的第一个 chunk 显著偏慢、方差增大，从而影响“取 best run”的公平性与可解释性。
+- **实现细节**（`src/wave_omp.cpp`）：
+  - 在 `OmpImplementationData` 构造函数中，完成设备内存分配与 H2D 拷贝后，执行一次“极小” offload：
+    - `#pragma omp target teams distribute parallel for device(device) is_device_ptr(u_now)`
+    - 循环仅 1 次，对 `u_now[0]` 做自赋值（`u_now[idx] = u_now[idx];`）。
+  - 目的仅是触发一次性初始化与代码路径，不改变数值结果；后续进入 `run()` 的首个 chunk 更接近稳态表现。
+- **正确性**：MIG 与完整 A100 上 CUDA/OMP 仍保持 `Number of differences detected = 0`。
+- **性能效果（mean SU/s，程序内计时，I/O 与 D2H 均不计入计时）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA mean ≈ 5.55e9，OpenMP mean ≈ 3.42e9（OpenMP 首 chunk 波动明显减小）。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 3.08e10，OpenMP mean ≈ 2.24e10（较预热前 ≈1.57e10 显著提高且更稳定）。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.93e10，OpenMP mean ≈ 4.42e10（较预热前 ≈3.67e10 提升且更稳定）。
+- **profiling 证据（更新版 nsys + ncu）**：
+  - `awave-nsys-20260206-095903.nsys-rep`：
+    - `nvtx_sum`：`run` ≈ 1.72 ms（4 steps 纯计算），`copyback` ≈ 36.6 ms（仅 CUDA 端 D2H），`initialise` ≈ 264 ms（包含初始化与系数拷贝等）。
+    - `cuda_gpu_kern_sum`：CUDA 内域 `step_kernel_interior` ≈ 288 us/step；OpenMP 内域 kernel ≈ 312 us/step；边界核单次约 15–19 us。
+  - `awave-ncu-20260206-095915.ncu-rep`（Roofline，CUDA 内域 kernel）：
+    - Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**，Workload achieved **~9% FP64 peak** → 仍为典型带宽受限 stencil。

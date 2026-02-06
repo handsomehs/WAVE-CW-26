@@ -111,4 +111,4 @@
 
 ## 12. 文档与提交纪律
 - 每完成一个里程碑并测试后：更新 `Completed.md` / `report_content.md`。
-- 按要求执行：`git add .` → `git commit -m "..."` → `git push`。
+- 当前工作流：`git add .` → `git commit -m "..."`（仅本地保存；是否 `git push` 以最新沟通为准）。

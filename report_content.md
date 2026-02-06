@@ -41,9 +41,9 @@
   - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.52e8，CUDA ≈ 4.23e9，OpenMP ≈ 3.62e9。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.94e8，CUDA ≈ 5.50e9，OpenMP ≈ 5.14e9。
 - **将 D2H 回传移出计时区后的新增数据（mean SU/s，最终计时口径）**：
-  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.21e8，CUDA ≈ 5.49e9，OpenMP ≈ 3.27e9。
-  - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.06e8，CUDA ≈ 3.05e10，OpenMP ≈ 1.57e10。
-  - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.87e8，CUDA ≈ 4.93e10，OpenMP ≈ 3.67e10。
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.21e8，CUDA ≈ 5.55e9，OpenMP ≈ 3.42e9。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.20e8，CUDA ≈ 3.08e10，OpenMP ≈ 2.24e10。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.87e8，CUDA ≈ 4.93e10，OpenMP ≈ 4.42e10。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
@@ -51,17 +51,17 @@
 
 ## Profiling 数据点（可直接进报告）
 - **Nsight Systems（nsys）**：
-  - profile 文件：`awave-nsys-20260206-095213.nsys-rep`（A100，shape=256^3，nsteps=4,out_period=4）
+  - profile 文件：`awave-nsys-20260206-095903.nsys-rep`（A100，shape=256^3，nsteps=4,out_period=4）
   - `nsys stats --report cuda_gpu_kern_sum` 的结论要点：
     - 计算时间几乎全部集中在 **内域 stencil kernel**（CUDA `step_kernel_interior` 与 OpenMP offload 对应内域 kernel）。
     - 边界层 kernel 的总耗时占比很小（每 step 的边界核仅 ~15–19 us 量级）。
   - `nsys stats --report nvtx_sum`（NVTX）要点：
-    - `run`（4 steps 纯计算）≈ 1.79 ms
-    - `copyback`（仅 CUDA 端 D2H）≈ 43.8 ms
+    - `run`（4 steps 纯计算）≈ 1.72 ms
+    - `copyback`（仅 CUDA 端 D2H）≈ 36.6 ms
 - **Nsight Compute（ncu，聚焦 CUDA 内域 kernel）**：
-  - profile 文件：`awave-ncu-20260206-095223.ncu-rep`
+  - profile 文件：`awave-ncu-20260206-095915.ncu-rep`
   - Roofline（`SpeedOfLight_RooflineChart`）核心数据：
-    - Achieved **DRAM Bandwidth ≈ 1.38 TByte/s**
+    - Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**
     - Workload achieved **~9% FP64 peak**（典型带宽受限行为）
 
 ## Section 3: CUDA vs OpenMP 对比
