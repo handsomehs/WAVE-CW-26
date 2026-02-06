@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-large-a100-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 3600
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+        command:
+          - bash
+          - -lc
+          - >-
+            set -euo pipefail;
+            run_case() {
+              echo "===== CASE shape=$1 nsteps=$2 out_period=$3 =====";
+              stdbuf -oL -eL build-dev/awave -shape "$1" -nsteps "$2" -out_period "$3" "/tmp/awave-large-$4";
+              rm -f "/tmp/awave-large-$4"*.vtkhdf || true;
+            };
+            run_case 512,64,512 20 10 512x64x512;
+            run_case 768,64,768 20 10 768x64x768;
+            run_case 1000,64,1000 20 10 1000x64x1000;
+        resources:
+          requests:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
+

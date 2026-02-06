@@ -109,7 +109,9 @@ For plots/tables, run a small matrix of problem sizes. Example:
 
 Convenience jobs:
 - `run-sweep-a100.yml`: runs a small size sweep on full A100s and deletes `/tmp` outputs after each case.
+- `run-large-a100.yml`: runs larger (but checker-safe) shapes with `nx == nz`, up to `1000x64x1000`.
 - `profile-nsys-32.yml`: nsys profile for `32^3` to highlight small-problem launch/runtime overhead.
+- `profile-nsys-1000x64x1000.yml`: nsys profile for a large field to quantify `run` vs `copyback`.
 
 Guidelines:
 - Keep `out_period` large enough to avoid excessive output volume.

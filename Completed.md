@@ -169,3 +169,21 @@
     - `nvtx_sum`：CUDA `run` 每 chunk（100 steps）≈ 1.56–1.71 ms，`copyback` 每 chunk ≈ 0.13 ms。
     - `cuda_gpu_kern_sum`：CUDA 三个 stencil kernel 均约 **~3 us/launch**；OpenMP 的三个 offload kernel 约 **~3.6 us/launch**（各 200 次）。
   - 结论：小规模主要受 launch/offload 运行时开销影响；大规模则能更好地逼近带宽上限（与 256^3 的 ncu roofline 一致）。
+
+## 13. 补齐到 1000 维度的测试 + 大规模 Profiling（已完成并记录到报告素材）
+- **原理**：
+  - 报告要求覆盖 32--1000 的规模范围。
+  - 同时需要规避 `main.cpp` 中 checker 对非立方尺寸的 bug：`k` 循环上界误用 `L=nx+2`（应为 `N=nz+2`）。因此测试非立方尺寸时需保证 `nx == nz`。
+- **实现细节（测试/流程）**：
+  - 新增大尺度测试 job：`run-large-a100.yml`（形状为 `512x64x512`、`768x64x768`、`1000x64x1000`，均为 `nsteps=20,out_period=10`，每次运行后删除 `/tmp` 输出）。
+  - 新增大尺度 profiling job：`profile-nsys-1000x64x1000.yml`（`nsys` 采集 `1000x64x1000`，对比 run 与 copyback 的量级关系）。
+- **正确性**：上述规模 CUDA/OMP 均保持 `0 differences`。
+- **性能效果（mean SU/s，完整 A100，最终计时口径）**：
+  - 512x64x512：CUDA ≈ 4.78e10，OpenMP ≈ 4.27e10。
+  - 768x64x768：CUDA ≈ 5.10e10，OpenMP ≈ 4.69e10。
+  - 1000x64x1000：CUDA ≈ 4.22e10（chunk 间波动大；best≈5.29e10），OpenMP ≈ 4.83e10（更稳定）。
+- **profiling 证据（大规模回传 vs 计算）**：
+  - `awave-nsys-1000x64x1000-20260206-102717.nsys-rep`：
+    - `nvtx_sum`：`run` 每 chunk（2 steps）≈ 2.58–3.13 ms；`copyback` 每 chunk ≈ 133–149 ms；初始化 ≈ 352 ms。
+    - `cuda_gpu_kern_sum`：CUDA 内域 `step_kernel_interior` ≈ 1.01 ms/step；OpenMP 内域 kernel ≈ 1.09 ms/step；边界核开销相对更小但仍可见。
+  - 结论：当场数据很大时，D2H 回传（为输出/对比所需）会主导端到端 walltime；而基准计时刻意排除 I/O，所以应将 copyback 置于 `append_u_fields()`（计时外）并用 NVTX 量化其成本。
