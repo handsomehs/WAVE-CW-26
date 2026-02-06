@@ -203,4 +203,3 @@ void OmpWaveSimulation::run(int n) {
     omp_target_memcpy(u.now().data(), impl.d_now, impl.u_size * sizeof(double), 0, 0, host, impl.device);
     omp_target_memcpy(u.prev().data(), impl.d_prev, impl.u_size * sizeof(double), 0, 0, host, impl.device);
 }
-}
