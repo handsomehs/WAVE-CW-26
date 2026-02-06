@@ -203,3 +203,26 @@
   - 1000x64x1000（完整 A100，nsteps=20,out_period=10）：CUDA 从“chunk 间大幅波动”收敛为稳定表现（mean ≈ 5.26e10，std ≈ 3.63e8）。
 - **profiling 证据（nsys）**：
   - `awave-nsys-32-20260206-103850.nsys-rep` 的 `cuda_gpu_kern_sum` 中可见 `warmup_kernel` 在初始化阶段仅出现 1 次；主要 stencil kernels 的每次 launch 耗时分布保持不变（说明预热不改变稳态 kernel 性能，只消除一次性启动开销）。
+
+## 15. 小规模自适应“单核/单 offload”路径（减少 launch 开销，已完成并实测 + profiling）
+- **原理**：
+  - 分域分核（内域 + x/y 边界）能提升大规模带宽效率，但每 step 需要 3 次 kernel/offload 启动。
+  - 对 32--96 这类小规模问题，每次 kernel 只有微秒级，launch/offload 运行时开销会占主导；此时“少启动几个 kernel”往往比“单个 kernel 更快一点”更重要。
+  - 因此在小规模下改用“单 kernel/单 offload + 原始逐点阻尼分支”，以显著降低每 step 的启动开销；大规模仍保留分域分核。
+- **实现细节**：
+  - CUDA（`src/wave_cuda.cu`）：
+    - 计算 `nsites = nx*ny*nz`；当 `nsites < 1,000,000` 时使用单 kernel `step_kernel`（逐点读取 `damp_xy` 并判断 `d==0`），否则使用 3 kernel 分域路径（`step_kernel_interior/xbound/ybound`）。
+  - OpenMP（`src/wave_omp.cpp`）：
+    - 同样按 `nsites < 1,000,000` 选择：小规模用 1 个 `target teams distribute parallel for collapse(3)`（逐点阻尼分支），大规模用 3 个 offload region（内域/边界）。
+  - 该阈值选择使 32^3/64^3/96^3 走“单核”路径，而 128^3 及以上仍走“分域”路径（避免大规模退化）。
+- **正确性**：
+  - 64^3（A100 MIG，nsteps=100,out_period=10）：CUDA/OMP `0 differences`。
+  - 完整 A100 sweep（32^3--384^3）与大尺度（512x64x512, 768x64x768, 1000x64x1000）：CUDA/OMP 均为 `0 differences`。
+- **性能效果（完整 A100，mean SU/s，最终计时口径）**：
+  - 32^3（nsteps=200,out_period=100）：CUDA ≈ 6.64e9（原 ≈ 2.62e9），OpenMP ≈ 2.27e9（原 ≈ 0.79e9）。
+  - 64^3（nsteps=200,out_period=100）：CUDA ≈ 3.08e10（原 ≈ 1.63e10），OpenMP ≈ 1.46e10（原 ≈ 5.95e9）。
+  - 96^3（nsteps=200,out_period=100）：CUDA ≈ 5.29e10（原 ≈ 3.60e10），OpenMP ≈ 2.85e10（原 ≈ 1.53e10）。
+  - 128^3 及以上：基本保持不变（阈值以上仍使用分域分核）。
+- **profiling 证据（小规模 nsys）**：
+  - `awave-nsys-32-20260206-112413.nsys-rep`：
+    - `cuda_gpu_kern_sum`：CUDA 路径每 step 仅 1 个 `step_kernel`（200 次）；OpenMP 路径每 step 仅 1 个 offload kernel（200 次）；对比此前分域路径每 step 需要 3 次 kernel/offload，launch 数显著减少。

@@ -186,6 +186,14 @@ void OmpWaveSimulation::run(int n) {
     int const nx_inner = have_interior ? (nx - 2 * nbl) : 0;
     int const ny_inner = have_interior ? (ny - 2 * nbl) : 0;
 
+    // As in the CUDA implementation: splitting into interior/boundary offloads
+    // improves steady-state throughput, but increases launch overhead. For
+    // small domains, use a single offload region with the original per-point
+    // damping branch.
+    std::size_t constexpr split_threshold_sites = 1'000'000;
+    std::size_t const nsites = static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * static_cast<std::size_t>(nz);
+    bool const use_split = have_interior && (nsites >= split_threshold_sites);
+
     for (int step = 0; step < n; ++step) {
         double* u_prev = impl.d_prev;
         double* u_now = impl.d_now;
@@ -199,7 +207,7 @@ void OmpWaveSimulation::run(int n) {
         // boundary layers (see initialisation in wave_cpu.cpp). Splitting the
         // domain lets the bulk update avoid loading `d_damp_xy` and removes the
         // per-point branch.
-        if (have_interior) {
+        if (use_split) {
             // 1) Interior (undamped): i=[nbl, nx-nbl), j=[nbl, ny-nbl).
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
@@ -276,8 +284,8 @@ void OmpWaveSimulation::run(int n) {
                 }
             }
         } else {
-            // Fallback for very small problems: one kernel with the original
-            // per-point damping branch.
+            // Small-problem path: one offload with the original per-point
+            // damping branch to reduce launch overhead.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
                 is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)

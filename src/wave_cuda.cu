@@ -359,10 +359,18 @@ void CudaWaveSimulation::run(int n) {
     int const nx_inner = have_interior ? (nx - 2 * nbl) : 0;
     int const ny_inner = have_interior ? (ny - 2 * nbl) : 0;
 
+    // Domain splitting (interior + x/y boundary slabs) reduces memory traffic in
+    // large problems, but it also increases per-step launch overhead (3 kernels
+    // instead of 1). For small domains, launch overhead dominates, so prefer a
+    // single kernel with the original per-point damping branch.
+    std::size_t constexpr split_threshold_sites = 1'000'000;
+    std::size_t const nsites = static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * static_cast<std::size_t>(nz);
+    bool const use_split = have_interior && (nsites >= split_threshold_sites);
+
     dim3 grid_inner;
     dim3 grid_xb;
     dim3 grid_yb;
-    if (have_interior) {
+    if (use_split) {
         grid_inner = dim3(ceildiv(nz, static_cast<int>(block.x)),
                           ceildiv(ny_inner, static_cast<int>(block.y)),
                           ceildiv(nx_inner, static_cast<int>(block.z)));
@@ -375,7 +383,7 @@ void CudaWaveSimulation::run(int n) {
     }
 
     for (int i = 0; i < n; ++i) {
-        if (have_interior) {
+        if (use_split) {
             // 1) Interior (undamped) region.
             step_kernel_interior<<<grid_inner, block, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
@@ -406,8 +414,8 @@ void CudaWaveSimulation::run(int n) {
                     factor, dt);
             CUDA_CHECK(cudaGetLastError());
         } else {
-            // Fallback for very small problems: use a single kernel with the
-            // original per-point damping branch.
+            // Small-problem path: one kernel with the original per-point damping
+            // branch to reduce launch overhead.
             step_kernel<<<grid, block, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
                     impl.d_cs2_k, impl.d_damp_xy,

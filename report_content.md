@@ -46,20 +46,21 @@
   - 256^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 2.87e8，CUDA ≈ 4.93e10，OpenMP ≈ 4.42e10。
 - **规模扫描（完整 A100，最终计时口径，mean SU/s）**：
   - 说明：32^3/64^3/96^3 使用 `nsteps=200,out_period=100`；其余使用 `nsteps=20,out_period=10`（均为 2 chunks，输出写入 `/tmp` 并在 sweep job 中删除）。
-  - 32^3：CPU ≈ 3.43e8，CUDA ≈ 2.62e9，OpenMP ≈ 7.86e8。
-  - 64^3：CPU ≈ 3.85e8，CUDA ≈ 1.63e10，OpenMP ≈ 5.95e9。
-  - 96^3：CPU ≈ 3.54e8，CUDA ≈ 3.60e10，OpenMP ≈ 1.53e10。
-  - 128^3：CPU ≈ 3.24e8，CUDA ≈ 3.37e10，OpenMP ≈ 2.29e10。
-  - 192^3：CPU ≈ 3.00e8，CUDA ≈ 4.53e10，OpenMP ≈ 3.65e10。
-  - 256^3：CPU ≈ 3.01e8，CUDA ≈ 5.06e10，OpenMP ≈ 4.43e10。
-  - 384^3：CPU ≈ 2.86e8，CUDA ≈ 5.36e10，OpenMP ≈ 4.96e10。
+  - 32^3：CPU ≈ 3.64e8，CUDA ≈ 6.64e9，OpenMP ≈ 2.27e9。
+  - 64^3：CPU ≈ 3.74e8，CUDA ≈ 3.08e10，OpenMP ≈ 1.46e10。
+  - 96^3：CPU ≈ 3.73e8，CUDA ≈ 5.29e10，OpenMP ≈ 2.85e10。
+  - 128^3：CPU ≈ 3.12e8，CUDA ≈ 3.35e10，OpenMP ≈ 2.22e10。
+  - 192^3：CPU ≈ 2.86e8，CUDA ≈ 4.51e10，OpenMP ≈ 3.64e10。
+  - 256^3：CPU ≈ 2.91e8，CUDA ≈ 5.05e10，OpenMP ≈ 4.41e10。
+  - 384^3：CPU ≈ 2.80e8，CUDA ≈ 5.36e10，OpenMP ≈ 4.95e10。
 - **覆盖到 1000 维度的补充数据（完整 A100，最终计时口径，mean SU/s）**：
   - 说明：`main.cpp` 的 checker 循环对 `k` 的上界使用了 `L=nx+2`，因此非立方测试需保持 `nx == nz` 以避免越界/漏检；这里采用 (L,64,L) 形状覆盖到 1000。
-  - 512x64x512：CPU ≈ 2.83e8，CUDA ≈ 4.70e10，OpenMP ≈ 4.30e10。
-  - 768x64x768：CPU ≈ 2.63e8，CUDA ≈ 5.16e10，OpenMP ≈ 4.68e10。
-  - 1000x64x1000：CPU ≈ 2.76e8，CUDA ≈ 5.26e10，OpenMP ≈ 4.84e10。
+  - 512x64x512：CPU ≈ 2.81e8，CUDA ≈ 4.89e10，OpenMP ≈ 4.30e10。
+  - 768x64x768：CPU ≈ 2.71e8，CUDA ≈ 5.16e10，OpenMP ≈ 4.70e10。
+  - 1000x64x1000：CPU ≈ 2.77e8，CUDA ≈ 5.21e10，OpenMP ≈ 4.84e10。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
+  - 32--96 的小规模下，通过“自适应单核/单 offload”减少每 step 的 kernel 启动次数（3→1），CUDA/OMP 的 SU/s 可提升约 1.5--2.5 倍（见 nsys 的 kernel 统计证据）。
   - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
   - 基线版本中 `run()` 计时包含每个 chunk 末尾的 D2H 回传；最终版本将回传移动到 `append_u_fields()`（计时外），使计时更接近纯计算（nsys NVTX 显示回传耗时远大于计算核）。
 
@@ -73,15 +74,15 @@
     - `run`（4 steps 纯计算）≈ 1.72 ms
     - `copyback`（仅 CUDA 端 D2H）≈ 36.6 ms
 - **Nsight Systems（nsys，小规模启动开销证据）**：
-  - profile 文件：`awave-nsys-32-20260206-103850.nsys-rep`（A100，shape=32^3，nsteps=200,out_period=100）
+  - profile 文件：`awave-nsys-32-20260206-112413.nsys-rep`（A100，shape=32^3，nsteps=200,out_period=100）
   - `nvtx_sum`：
-    - `run`（每 chunk 100 steps）≈ 1.53–1.85 ms
-    - `copyback`（每 chunk）≈ 0.20–0.22 ms
+    - `run`（每 chunk 100 steps, CUDA）≈ 0.54–0.59 ms
+    - `copyback`（每 chunk, CUDA）≈ 0.19–0.39 ms
   - `cuda_gpu_kern_sum`：
-    - CUDA 内域/边界核均为 **~3 us/launch** 量级（200 次）
-    - OpenMP 的 3 个 offload kernel 也在 **~3.6 us/launch** 量级（200 次）
+    - CUDA 路径为 1 个 `step_kernel`（约 **~3.8 us/launch**，200 次）
+    - OpenMP 路径为 1 个 offload kernel（约 **~4.4 us/launch**，200 次）
     - `warmup_kernel` 在初始化阶段仅执行 1 次（用于消除 CUDA 首次 kernel 启动开销对首个 chunk 的污染）。
-  - 结论：小规模下 kernel 本身非常短，launch/运行时开销占比高；解释了 32^3/64^3 上 CUDA/OMP 的 SU/s 明显低于大规模带宽饱和区间。
+  - 结论：小规模下 kernel 本身非常短，launch/运行时开销占比高；因此采用“单核/单 offload”路径减少启动次数可显著提升 SU/s，但仍低于大规模带宽饱和区间。
 - **Nsight Systems（nsys，大规模回传 vs 计算）**：
   - profile 文件：`awave-nsys-1000x64x1000-20260206-102717.nsys-rep`（A100，shape=1000x64x1000，nsteps=4,out_period=2）
   - `nvtx_sum`：
