@@ -47,3 +47,26 @@
   - 64^3（MIG，nsteps=100,out_period=10）：CUDA mean ≈ 2.17e9，OpenMP mean ≈ 1.89e9。
   - 128^3（A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.12e9，OpenMP mean ≈ 3.67e9。
   - 256^3（A100，nsteps=4,out_period=2）：CUDA mean ≈ 1.16e9，OpenMP mean ≈ 9.74e8。
+
+## 7. 内域/边界分域优化（已完成并实测）
+- **原理**：
+  - 阻尼场 `damp(i,j,k)` 仅在 x/y 两个方向的边界层非零，内域严格为 0（见 `wave_cpu.cpp` 中阻尼初始化）。
+  - 因此可把更新分为两类：
+    - **内域**：`d=0`，不需要读取 `damp`，也不需要分支。
+    - **边界层**：`d>0`，统一走阻尼公式。
+  - 这样能减少内域的全局内存读（去掉 `damp`）并减少分支相关开销。
+- **实现细节**：
+  - CUDA（`wave_cuda.cu`）：
+    - 新增 3 个 kernel：`step_kernel_interior`、`step_kernel_xbound`、`step_kernel_ybound`。
+    - 采用“并集覆盖且不重叠”的分域方式：
+      - 内域：`i=[nbl,nx-nbl), j=[nbl,ny-nbl)`。
+      - x 边界层：`i in [0,nbl) ∪ [nx-nbl,nx)`（包含四角）。
+      - y 边界层（排除 x 边界以免重复写）：`i=[nbl,nx-nbl), j in [0,nbl) ∪ [ny-nbl,ny)`。
+  - OpenMP offload（`wave_omp.cpp`）：
+    - 对应实现 3 个 `target teams distribute parallel for`，分别覆盖内域、x 边界层、y 边界层。
+    - 由于 NVHPC 对 `target` 区域内包含多个 `teams` 构造有限制，因此采用多次 `target teams ...` 的方式保证可编译运行。
+- **正确性与效果（实测）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA/OMP 仍为 0 differences。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.74e9，OpenMP mean ≈ 4.07e9（较基线提升）。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.53e9，OpenMP mean ≈ 4.50e9（稳定高带宽）。
+  - 备注：当 `out_period` 很小（例如 2）时，`run()` 末的 D2H 回传在计时内，可能显著拉低 SU/s；因此性能测试建议使用较大的 chunk 长度（如 out_period=10）。

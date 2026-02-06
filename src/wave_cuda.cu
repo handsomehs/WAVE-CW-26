@@ -202,6 +202,114 @@ __global__ void step_kernel(double const* __restrict__ u_prev,
     }
 }
 
+// Interior update (no damping): the damping field is identically zero away from the
+// x/y boundary layers, so we can avoid reading it and remove the branch entirely.
+__global__ void step_kernel_interior(double const* __restrict__ u_prev,
+                                     double const* __restrict__ u_now,
+                                     double* __restrict__ u_next,
+                                     double const* __restrict__ cs2,
+                                     int nx_inner, int ny_inner, int nz,
+                                     int u_stride_x, int u_stride_y,
+                                     int c_stride_x, int c_stride_y,
+                                     int nbl,
+                                     double factor) {
+    int k = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+    int j_inner = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+    int i_inner = static_cast<int>(blockIdx.z * blockDim.z + threadIdx.z);
+    if (i_inner >= nx_inner || j_inner >= ny_inner || k >= nz) return;
+
+    int i = i_inner + nbl;
+    int j = j_inner + nbl;
+
+    int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+    int c_idx = i * c_stride_x + j * c_stride_y + k;
+
+    double center = u_now[u_idx];
+    double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+               + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+               + u_now[u_idx - 1] + u_now[u_idx + 1]
+               - 6.0 * center;
+    double value = factor * cs2[c_idx] * lap;
+    u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+}
+
+// Boundary update (with damping) on x boundary layers. We combine the low and high
+// x-slabs into one launch by mapping i_in in [0, 2*nbl) to:
+//   i = i_in                    for i_in < nbl
+//   i = (nx - nbl) + (i_in-nbl) for i_in >= nbl
+// This covers all x-boundary points (including corners), so the y-boundary kernel
+// below must exclude x-boundary i values to avoid double writes.
+__global__ void step_kernel_xbound(double const* __restrict__ u_prev,
+                                   double const* __restrict__ u_now,
+                                   double* __restrict__ u_next,
+                                   double const* __restrict__ cs2,
+                                   double const* __restrict__ damp,
+                                   int nx, int ny, int nz,
+                                   int u_stride_x, int u_stride_y,
+                                   int c_stride_x, int c_stride_y,
+                                   int nbl,
+                                   double factor, double dt) {
+    int k = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+    int j = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+    int i_in = static_cast<int>(blockIdx.z * blockDim.z + threadIdx.z);
+    if (i_in >= 2 * nbl || j >= ny || k >= nz) return;
+
+    int i = i_in + ((i_in >= nbl) ? (nx - 2 * nbl) : 0);
+
+    int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+    int c_idx = i * c_stride_x + j * c_stride_y + k;
+
+    double center = u_now[u_idx];
+    double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+               + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+               + u_now[u_idx - 1] + u_now[u_idx + 1]
+               - 6.0 * center;
+    double value = factor * cs2[c_idx] * lap;
+
+    double d = damp[c_idx];
+    double inv_den = 1.0 / (1.0 + d * dt);
+    double num = 1.0 - d * dt;
+    value *= inv_den;
+    u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+}
+
+// Boundary update (with damping) on y boundary layers, excluding x-boundary slabs.
+// We combine the low and high y-slabs in the same way as the x-boundary kernel.
+__global__ void step_kernel_ybound(double const* __restrict__ u_prev,
+                                   double const* __restrict__ u_now,
+                                   double* __restrict__ u_next,
+                                   double const* __restrict__ cs2,
+                                   double const* __restrict__ damp,
+                                   int nx_inner, int ny, int nz,
+                                   int u_stride_x, int u_stride_y,
+                                   int c_stride_x, int c_stride_y,
+                                   int nbl,
+                                   double factor, double dt) {
+    int k = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+    int j_in = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+    int i_inner = static_cast<int>(blockIdx.z * blockDim.z + threadIdx.z);
+    if (i_inner >= nx_inner || j_in >= 2 * nbl || k >= nz) return;
+
+    int i = i_inner + nbl;
+    int j = j_in + ((j_in >= nbl) ? (ny - 2 * nbl) : 0);
+
+    int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+    int c_idx = i * c_stride_x + j * c_stride_y + k;
+
+    double center = u_now[u_idx];
+    double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+               + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+               + u_now[u_idx - 1] + u_now[u_idx + 1]
+               - 6.0 * center;
+    double value = factor * cs2[c_idx] * lap;
+
+    double d = damp[c_idx];
+    double inv_den = 1.0 / (1.0 + d * dt);
+    double num = 1.0 - d * dt;
+    value *= inv_den;
+    u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+}
+
 void CudaWaveSimulation::run(int n) {
     nvtx3::scoped_range r{"run"};
     if (!impl) {
@@ -212,24 +320,83 @@ void CudaWaveSimulation::run(int n) {
     }
 
     auto& impl = *this->impl;
-    auto [nx, ny, nz] = params.shape;
+    int const nx = impl.nx;
+    int const ny = impl.ny;
+    int const nz = impl.nz;
+    int const nbl = params.nBoundaryLayers;
     double dt = params.dt;
     double factor = dt * dt / (params.dx * params.dx);
 
     dim3 block(32, 4, 2);
-    dim3 grid(ceildiv(static_cast<int>(nz), static_cast<int>(block.x)),
-              ceildiv(static_cast<int>(ny), static_cast<int>(block.y)),
-              ceildiv(static_cast<int>(nx), static_cast<int>(block.z)));
+    dim3 grid(ceildiv(nz, static_cast<int>(block.x)),
+              ceildiv(ny, static_cast<int>(block.y)),
+              ceildiv(nx, static_cast<int>(block.z)));
+
+    bool const have_interior = (nbl > 0) && (nx > 2 * nbl) && (ny > 2 * nbl);
+    int const nx_inner = have_interior ? (nx - 2 * nbl) : 0;
+    int const ny_inner = have_interior ? (ny - 2 * nbl) : 0;
+
+    dim3 grid_inner;
+    dim3 grid_xb;
+    dim3 grid_yb;
+    if (have_interior) {
+        grid_inner = dim3(ceildiv(nz, static_cast<int>(block.x)),
+                          ceildiv(ny_inner, static_cast<int>(block.y)),
+                          ceildiv(nx_inner, static_cast<int>(block.z)));
+        grid_xb = dim3(ceildiv(nz, static_cast<int>(block.x)),
+                       ceildiv(ny, static_cast<int>(block.y)),
+                       ceildiv(2 * nbl, static_cast<int>(block.z)));
+        grid_yb = dim3(ceildiv(nz, static_cast<int>(block.x)),
+                       ceildiv(2 * nbl, static_cast<int>(block.y)),
+                       ceildiv(nx_inner, static_cast<int>(block.z)));
+    }
 
     for (int i = 0; i < n; ++i) {
-        step_kernel<<<grid, block, 0, impl.stream>>>(
-                impl.d_prev, impl.d_now, impl.d_next,
-                impl.d_cs2, impl.d_damp,
-                static_cast<int>(nx), static_cast<int>(ny), static_cast<int>(nz),
-                impl.u_stride_x, impl.u_stride_y,
-                impl.c_stride_x, impl.c_stride_y,
-                factor, dt);
-        CUDA_CHECK(cudaGetLastError());
+        if (have_interior) {
+            // 1) Interior (undamped) region.
+            step_kernel_interior<<<grid_inner, block, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2,
+                    nx_inner, ny_inner, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    impl.c_stride_x, impl.c_stride_y,
+                    nbl,
+                    factor);
+            CUDA_CHECK(cudaGetLastError());
+
+            // 2) x boundary layers (includes corners).
+            step_kernel_xbound<<<grid_xb, block, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2, impl.d_damp,
+                    nx, ny, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    impl.c_stride_x, impl.c_stride_y,
+                    nbl,
+                    factor, dt);
+            CUDA_CHECK(cudaGetLastError());
+
+            // 3) y boundary layers excluding x boundary layers.
+            step_kernel_ybound<<<grid_yb, block, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2, impl.d_damp,
+                    nx_inner, ny, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    impl.c_stride_x, impl.c_stride_y,
+                    nbl,
+                    factor, dt);
+            CUDA_CHECK(cudaGetLastError());
+        } else {
+            // Fallback for very small problems: use a single kernel with the
+            // original per-point damping branch.
+            step_kernel<<<grid, block, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2, impl.d_damp,
+                    nx, ny, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    impl.c_stride_x, impl.c_stride_y,
+                    factor, dt);
+            CUDA_CHECK(cudaGetLastError());
+        }
 
         // Rotate device pointers; avoids device memcpy each step.
         auto* old_prev = impl.d_prev;
