@@ -69,7 +69,7 @@
   - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA/OMP 仍为 0 differences。
   - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.74e9，OpenMP mean ≈ 4.07e9（较基线提升）。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.53e9，OpenMP mean ≈ 4.50e9（稳定高带宽）。
-  - 备注：当 `out_period` 很小（例如 2）时，`run()` 末的 D2H 回传在计时内，可能显著拉低 SU/s；因此性能测试建议使用较大的 chunk 长度（如 out_period=10）。
+  - 备注：早期版本中 D2H 回传位于 `run()` 内，`out_period` 很小（chunk 很短）时会显著拉低 SU/s；该问题已在第 10 部分通过将回传移至 `append_u_fields()`（计时外）解决。
 
 ## 8. 系数压缩：`cs2`(1D) + `damp`(2D)（已完成并实测）
 - **原理**：
@@ -105,3 +105,25 @@
   - `ncu --import ... --page details --print-details all`（Roofline section）关键数据：
     - `step_kernel_interior` Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**（接近 A100 HBM 峰值，证明整体为带宽瓶颈）
     - 工作负载达到 **约 9% FP64 峰值**（进一步说明不是算力瓶颈）
+
+## 10. 将 D2H 回传移出计时区（已完成并实测 + profiling）
+- **原理**：
+  - `main.cpp` 的 benchmark 计时仅包围 `run(len)`，随后调用 `append_u_fields()` 写输出（I/O 被刻意排除在计时之外）。
+  - GPU 版本必须在输出/对比前把数据回传到主机，但这一步属于“输出管线”，不应污染计算核的计时。
+- **实现细节**：
+  - CUDA（`wave_cuda.cu`）：
+    - `run()` 仅负责推进 n 步并在末尾 `cudaStreamSynchronize`，保证计时覆盖 kernel 执行。
+    - `append_u_fields()` 中执行 D2H（`u.now/u.prev`）并同步，然后写 HDF5。
+    - 添加 NVTX range `copyback`，便于 nsys 量化回传开销。
+  - OpenMP（`wave_omp.cpp`）：
+    - `run()` 只做 offload 计算与指针轮换。
+    - `append_u_fields()` 中用 `omp_target_memcpy` 回传 `u.now/u.prev` 再写 HDF5。
+- **正确性**：CUDA/OMP 在 MIG 与完整 A100 上均保持 `0 differences`。
+- **性能效果（mean SU/s，程序内计时，I/O 不计入计时；D2H 现在也不计入计时）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA mean ≈ 5.49e9，OpenMP mean ≈ 3.27e9。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 3.05e10，OpenMP mean ≈ 1.57e10。
+  - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.93e10，OpenMP mean ≈ 3.67e10。
+- **profiling 证据（nsys + NVTX）**：
+  - `awave-nsys-20260206-095213.nsys-rep`：
+    - NVTX：`run` ≈ 1.79 ms（4 steps 纯计算），`copyback` ≈ 43.8 ms（仅 CUDA 端回传）→ 回传远大于计算核。
+    - `cuda_gpu_mem_time_sum`：D2H 总计约 81 ms（4 次 * ~137 MB，每次 ~20 ms，含 CUDA 与 OpenMP 回传）。

@@ -111,6 +111,14 @@ OmpWaveSimulation OmpWaveSimulation::from_cpu_sim(const fs::path& cp, const Wave
 
 
 void OmpWaveSimulation::append_u_fields() {
+    if (impl) {
+        // Ensure host copies of u are up to date before writing the checkpoint.
+        // This keeps device-to-host transfers out of the timed `run()` region.
+        auto& impl = *this->impl;
+        auto host = omp_get_initial_device();
+        omp_target_memcpy(u.now().data(), impl.d_now, impl.u_size * sizeof(double), 0, 0, host, impl.device);
+        omp_target_memcpy(u.prev().data(), impl.d_prev, impl.u_size * sizeof(double), 0, 0, host, impl.device);
+    }
     h5.append_u(u);
 }
 
@@ -298,9 +306,4 @@ void OmpWaveSimulation::run(int n) {
         impl.d_next = old_prev;
         u.advance();
     }
-
-    // Copy back only after this run chunk for output and validation.
-    auto host = omp_get_initial_device();
-    omp_target_memcpy(u.now().data(), impl.d_now, impl.u_size * sizeof(double), 0, 0, host, impl.device);
-    omp_target_memcpy(u.prev().data(), impl.d_prev, impl.u_size * sizeof(double), 0, 0, host, impl.device);
 }

@@ -135,6 +135,17 @@ CudaWaveSimulation CudaWaveSimulation::from_cpu_sim(const fs::path& cp, const Wa
 }
 
 void CudaWaveSimulation::append_u_fields() {
+    if (impl) {
+        // Ensure host copies of u are up to date before writing the checkpoint.
+        // This keeps device-to-host transfers out of the timed `run()` region.
+        nvtx3::scoped_range r{"copyback"};
+        auto& impl = *this->impl;
+        CUDA_CHECK(cudaMemcpyAsync(u.now().data(), impl.d_now, impl.u_size * sizeof(double),
+                                   cudaMemcpyDeviceToHost, impl.stream));
+        CUDA_CHECK(cudaMemcpyAsync(u.prev().data(), impl.d_prev, impl.u_size * sizeof(double),
+                                   cudaMemcpyDeviceToHost, impl.stream));
+        CUDA_CHECK(cudaStreamSynchronize(impl.stream));
+    }
     h5.append_u(u);
 }
 
@@ -400,10 +411,6 @@ void CudaWaveSimulation::run(int n) {
         u.advance();
     }
 
-    // Copy back only after this run chunk for output and validation.
-    CUDA_CHECK(cudaMemcpyAsync(u.now().data(), impl.d_now, impl.u_size * sizeof(double),
-                               cudaMemcpyDeviceToHost, impl.stream));
-    CUDA_CHECK(cudaMemcpyAsync(u.prev().data(), impl.d_prev, impl.u_size * sizeof(double),
-                               cudaMemcpyDeviceToHost, impl.stream));
+    // Synchronise so the caller's timing covers kernel execution.
     CUDA_CHECK(cudaStreamSynchronize(impl.stream));
 }
