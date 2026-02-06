@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-perf-a100-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 1200
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+        command:
+          - bash
+          - -lc
+          - >-
+            build-dev/awave
+            -shape 256,256,256
+            -nsteps 4
+            -out_period 2
+            /tmp/awave-perf-a100-256
+        resources:
+          requests:
+            cpu: 1
+            memory: 4Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 4Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB

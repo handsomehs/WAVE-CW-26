@@ -147,7 +147,10 @@ void OmpWaveSimulation::run(int n) {
     }
 
     auto& impl = *this->impl;
-    auto [nx, ny, nz] = params.shape;
+    int const nx = impl.nx;
+    int const ny = impl.ny;
+    int const nz = impl.nz;
+    int const device = impl.device;
     double dt = params.dt;
     double factor = dt * dt / (params.dx * params.dx);
 
@@ -163,10 +166,11 @@ void OmpWaveSimulation::run(int n) {
         int c_stride_y = impl.c_stride_y;
 
         #pragma omp target teams distribute parallel for collapse(3) \
+            device(device) \
             is_device_ptr(u_prev, u_now, u_next, d_cs2, d_damp)
-        for (int i = 0; i < static_cast<int>(nx); ++i) {
-            for (int j = 0; j < static_cast<int>(ny); ++j) {
-                for (int k = 0; k < static_cast<int>(nz); ++k) {
+        for (int i = 0; i < nx; ++i) {
+            for (int j = 0; j < ny; ++j) {
+                for (int k = 0; k < nz; ++k) {
                     int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
                     int c_idx = i * c_stride_x + j * c_stride_y + k;
 

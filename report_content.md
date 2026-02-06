@@ -22,6 +22,19 @@
   - Nsight Systems 时间线截图（核/拷贝重叠）。
   - Nsight Compute 指标表（DRAM 吞吐、占用、分支发散）。
 
+## 已收集的实测数据（可直接进报告）
+- **测试说明**：
+  - 程序固定执行 CPU → CUDA → OpenMP，并在每个 chunk 计时（I/O 不计入计时）。
+  - OpenMP 运行设置 `OMP_TARGET_OFFLOAD=MANDATORY`，避免静默回退。
+  - 测试用 YAML：`run-correct-mig.yml`、`run-perf-a100-128.yml`、`run-perf-a100.yml`。
+- **结果汇总（mean SU/s）**：
+  - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CPU ≈ 3.25e8，CUDA ≈ 2.17e9，OpenMP ≈ 1.89e9。
+  - 128^3（完整 A100，nsteps=20,out_period=10）：CPU ≈ 3.12e8，CUDA ≈ 4.12e9，OpenMP ≈ 3.67e9。
+  - 256^3（完整 A100，nsteps=4,out_period=2）：CPU ≈ 2.59e8，CUDA ≈ 1.16e9，OpenMP ≈ 9.74e8。
+- **可写入报告的观察点**：
+  - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
+  - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
+
 ## Section 3: CUDA vs OpenMP 对比
 - **维度**：
   - 性能：大规模带宽饱和度、小规模启动开销。
