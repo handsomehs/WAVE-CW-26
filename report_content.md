@@ -123,6 +123,12 @@
     - 384,384,384: mode3 beats mode1 by ~2.1% (mode1=5.260e+10, mode3=5.369e+10).
   - OpenMP: mode1 best in 15/15 shapes; mode2/mode3 never best.
 - **Decision**: auto mode defaults to **mode1** (single kernel/offload) for both CUDA and OpenMP; modes 2/3 kept for benchmarking via `AWAVE_KERNEL_MODE`.
+- **Why mode1 is fastest in practice**:
+  - **Launch/runtime overhead dominates**: splitting into 2/3 kernels adds extra launches per step. For small-to-mid sizes, kernel runtime is microseconds, so extra launches hurt more than the branch saved by splitting.
+  - **Branch cost is low**: most of the domain has `d=0`, so warps are largely coherent; only a thin boundary region pays the damping branch/divergence.
+  - **Memory traffic balance**: the stencil already streams 6 neighbors + center + write; reading one extra `damp_xy` value per point is cheap relative to the full stencil traffic, so the benefit of removing it in the interior is small.
+  - **Smaller grids under-utilize the GPU**: boundary-only kernels run on thin slabs (few threads), which reduces occupancy and increases scheduling overhead. A single full-grid kernel keeps occupancy higher and amortizes launch cost.
+  - **OpenMP offload cost**: each `target` region has non-trivial runtime overhead; fewer regions consistently improves performance.
 
 ### Full results (mean SU/s)
 | shape | mode | CPU mean | CUDA mean | OpenMP mean |
