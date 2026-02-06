@@ -8,7 +8,7 @@
 #include <vector>
 
 // Allow benchmarking different kernel decomposition strategies without
-// recompiling. See `wave_cuda.cu` for the full description.
+// recompiling. See `wave_cuda.cu` for the full description (auto defaults to 1).
 static int kernel_mode_from_env() {
     const char* env = std::getenv("AWAVE_KERNEL_MODE");
     if (!env || env[0] == '\0') return 0;
@@ -207,7 +207,8 @@ void OmpWaveSimulation::run(int n) {
     //   3: interior + x/y boundary offloads
     //
     // "Auto" defaults to the 1-offload path; 2/3-offload modes remain
-    // available for benchmarking via AWAVE_KERNEL_MODE.
+    // available for benchmarking via AWAVE_KERNEL_MODE. The A100 sweep
+    // shows mode 1 is consistently fastest across the tested shapes.
     int mode = 0; // 0=auto, 1=one-kernel, 2=two-kernel, 3=three-kernel
     int const requested_mode = kernel_mode_from_env();
     if (!have_interior) {
@@ -396,6 +397,7 @@ void OmpWaveSimulation::run(int n) {
         }
 
         // Rotate device pointers; avoids device memcpy each step.
+        // Keep the host-side time counter in sync for output and checking.
         auto* old_prev = impl.d_prev;
         impl.d_prev = impl.d_now;
         impl.d_now = impl.d_next;

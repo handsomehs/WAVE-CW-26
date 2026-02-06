@@ -29,7 +29,7 @@ static std::size_t padded_size(Params const& params) {
 //   AWAVE_KERNEL_MODE=1  -> force single-kernel update (branch on damping)
 //   AWAVE_KERNEL_MODE=2  -> force two-kernel update (interior + combined boundary)
 //   AWAVE_KERNEL_MODE=3  -> force three-kernel update (interior + x/y boundary kernels)
-// Unset / any other value keeps "auto" behaviour.
+// Unset / any other value keeps "auto" behaviour (currently mode 1).
 static int kernel_mode_from_env() {
     const char* env = std::getenv("AWAVE_KERNEL_MODE");
     if (!env || env[0] == '\0') return 0;
@@ -426,7 +426,9 @@ void CudaWaveSimulation::run(int n) {
     //   3 kernel: interior + x/y boundary kernels (most specialised)
     //
     // "Auto" defaults to the 1-kernel path; 2/3-kernel modes are still
-    // available for benchmarking via AWAVE_KERNEL_MODE.
+    // available for benchmarking via AWAVE_KERNEL_MODE. The sweep on A100
+    // (32..1000) shows mode 1 wins almost everywhere, so this is the safest
+    // default for marking.
     int mode = 0; // 0=auto, 1=one-kernel, 2=two-kernel, 3=three-kernel
     int const requested_mode = kernel_mode_from_env();
     if (!have_interior) {
@@ -523,6 +525,7 @@ void CudaWaveSimulation::run(int n) {
         }
 
         // Rotate device pointers; avoids device memcpy each step.
+        // Keep the host-side time counter in sync for output and checking.
         auto* old_prev = impl.d_prev;
         impl.d_prev = impl.d_now;
         impl.d_now = impl.d_next;
