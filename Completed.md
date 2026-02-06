@@ -187,3 +187,19 @@
     - `nvtx_sum`：`run` 每 chunk（2 steps）≈ 2.58–3.13 ms；`copyback` 每 chunk ≈ 133–149 ms；初始化 ≈ 352 ms。
     - `cuda_gpu_kern_sum`：CUDA 内域 `step_kernel_interior` ≈ 1.01 ms/step；OpenMP 内域 kernel ≈ 1.09 ms/step；边界核开销相对更小但仍可见。
   - 结论：当场数据很大时，D2H 回传（为输出/对比所需）会主导端到端 walltime；而基准计时刻意排除 I/O，所以应将 copyback 置于 `append_u_fields()`（计时外）并用 NVTX 量化其成本。
+
+## 14. CUDA 预热以消除首个 chunk 的一次性开销（已完成并实测 + profiling）
+- **原理**：
+  - CUDA 的首次 kernel launch 可能触发一次性的 module loading / runtime setup 等开销，使第一个计时 chunk 显著偏慢，导致 `min/max/std` 变大、`mean` 被拉低（尤其在小规模或某些大规模形状下更明显）。
+  - OpenMP 已通过一次极小 offload 完成预热（见第 11 部分），CUDA 侧也应提供同等处理，保证性能统计更接近稳态。
+- **实现细节（`src/wave_cuda.cu`）**：
+  - 新增 `warmup_kernel(double*)`：仅对 `u_now[0]` 做自赋值，不改变数值结果。
+  - 在 `CudaImplementationData` 构造函数中完成 H2D 初始化与同步后，执行一次 `warmup_kernel<<<1,1,0,stream>>>(d_now)` 并同步。
+  - 该预热发生在初始化阶段（非 benchmark 计时区），目的仅是触发一次性开销。
+- **正确性**：CUDA/OMP 在 MIG 与完整 A100 上仍保持 `0 differences`。
+- **性能效果（对比预热前，CUDA chunk0 更接近稳态，方差显著下降）**：
+  - 64^3（A100 MIG，nsteps=100,out_period=10）：CUDA chunk0 从 ~0.00083 s 降至 ~0.00061 s；CUDA mean ≈ 5.58e9，std 显著下降。
+  - 完整 A100 sweep（32--384）中 CUDA mean 普遍小幅提升且 std 明显收敛（例如 32^3：mean ≈ 2.62e9，std ≈ 1.18e8）。
+  - 1000x64x1000（完整 A100，nsteps=20,out_period=10）：CUDA 从“chunk 间大幅波动”收敛为稳定表现（mean ≈ 5.26e10，std ≈ 3.63e8）。
+- **profiling 证据（nsys）**：
+  - `awave-nsys-32-20260206-103850.nsys-rep` 的 `cuda_gpu_kern_sum` 中可见 `warmup_kernel` 在初始化阶段仅出现 1 次；主要 stencil kernels 的每次 launch 耗时分布保持不变（说明预热不改变稳态 kernel 性能，只消除一次性启动开销）。
