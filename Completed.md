@@ -89,3 +89,19 @@
   - 64^3（A100 MIG 1g.5gb，nsteps=100,out_period=10）：CUDA/OMP 仍为 0 differences。
   - 128^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 4.23e9，OpenMP mean ≈ 3.62e9（该规模下结果有一定波动，需更多重复实验确认趋势）。
   - 256^3（完整 A100，nsteps=20,out_period=10）：CUDA mean ≈ 5.50e9，OpenMP mean ≈ 5.14e9（相比未压缩约 4.5e9 有明显提升）。
+
+## 9. Nsight Profiling（已完成：nsys + ncu）
+- **目的**：为报告提供“性能为何如此”的证据：瓶颈位置、kernel 占比、带宽利用率（roofline）。
+- **nsys（时间线/Kernel 占比）**：
+  - YAML：`profile-nsys.yml`（A100，shape=256^3，nsteps=4,out_period=4；内存需 >=8Gi，否则会 OOMKilled）
+  - 产物：`awave-nsys-20260206-093807.nsys-rep`（已在 `.gitignore` 忽略，不提交）
+  - `nsys stats --report cuda_gpu_kern_sum` 关键结论：
+    - 计算主要集中在 **内域 kernel**：`step_kernel_interior`（CUDA）与对应的 OpenMP offload kernel（`wave_omp.cpp` 内域 target 区域）。
+    - 边界层 kernel（x/y 边界）单次仅 ~15–19 us 量级，远小于内域（~289–312 us）。
+    - OpenMP 内域 kernel 略慢于 CUDA 内域 kernel（同规模、同步数下约 8% 左右），但同属带宽受限型 stencil。
+- **ncu（Roofline/带宽利用）**：
+  - YAML：`profile-ncu.yml`（为减少干扰，设置 `OMP_TARGET_OFFLOAD=DISABLED`，只剖析 CUDA 内域 kernel）
+  - 产物：`awave-ncu-20260206-093818.ncu-rep`（已在 `.gitignore` 忽略，不提交）
+  - `ncu --import ... --page details --print-details all`（Roofline section）关键数据：
+    - `step_kernel_interior` Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**（接近 A100 HBM 峰值，证明整体为带宽瓶颈）
+    - 工作负载达到 **约 9% FP64 峰值**（进一步说明不是算力瓶颈）

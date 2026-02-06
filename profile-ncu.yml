@@ -12,27 +12,34 @@ spec:
     metadata:
       name: awave-pod
     spec:
-      activeDeadlineSeconds: 300
+      activeDeadlineSeconds: 1200
       containers:
       - name: run
         image: $container
         env:
           - name: HOME
             value: $shared_pvc_remote
+          # Keep the NCU run focused on CUDA kernels (OpenMP can be profiled with nsys).
+          - name: OMP_TARGET_OFFLOAD
+            value: DISABLED
         command:
           - bash
-          - -c
+          - -lc
           - >-
-            ncu -o $(KGPU_JOB_NAME)
-            build-dev/awave -shape 32,32,32 $(KGPU_JOB_NAME)
+            ncu -o awave-ncu-$(date +%Y%m%d-%H%M%S) -f
+            --target-processes all
+            --kernel-name regex:step_kernel_interior
+            --launch-skip 1 --launch-count 1
+            --section SpeedOfLight_RooflineChart
+            build-dev/awave -shape 256,256,256 -nsteps 4 -out_period 4 /tmp/awave-profile
         resources:
           requests:
             cpu: 1
-            memory: 1Gi
+            memory: 8Gi
             nvidia.com/gpu: 1
           limits:
             cpu: 1
-            memory: 1Gi
+            memory: 8Gi
             nvidia.com/gpu: 1
       restartPolicy: Never
       nodeSelector:

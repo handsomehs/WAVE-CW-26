@@ -15,20 +15,23 @@ spec:
       activeDeadlineSeconds: 300
       containers:
       - name: run
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
         command:
           - bash
-          - -c
+          - -lc
           - >-
-            nsys profile -o $(KGPU_JOB_NAME)
-            build-dev/awave -shape 32,32,32 $(KGPU_JOB_NAME)
+            nsys profile -t cuda,nvtx,osrt -o awave-nsys-$(date +%Y%m%d-%H%M%S) --force-overwrite=true
+            build-dev/awave -shape 256,256,256 -nsteps 4 -out_period 4 /tmp/awave-profile
         resources:
           requests:
             cpu: 1
-            memory: 1Gi
+            memory: 8Gi
             nvidia.com/gpu: 1
           limits:
             cpu: 1
-            memory: 1Gi
+            memory: 8Gi
             nvidia.com/gpu: 1
       restartPolicy: Never
       nodeSelector:

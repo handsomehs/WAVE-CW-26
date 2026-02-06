@@ -21,6 +21,7 @@
   - SU/s 随规模变化曲线（32–1000）。
   - Nsight Systems 时间线截图（核/拷贝重叠）。
   - Nsight Compute 指标表（DRAM 吞吐、占用、分支发散）。
+  - Roofline 证据：内域 kernel 的 Achieved DRAM Bandwidth 接近 A100 HBM 峰值（见下方“Profiling 数据点”）。
 
 ## 已收集的实测数据（可直接进报告）
 - **测试说明**：
@@ -43,6 +44,18 @@
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 规模增大后 SU/s 下滑，符合带宽受限 stencil 在缓存/带宽层级切换时的预期（需结合 Nsight 指标解释）。
   - `run()` 计时包含每个 chunk 末尾的 D2H 回传（用于输出与正确性对比）。当 `out_period` 很小（chunk 很短）时，这部分固定开销会显著影响 SU/s，应在报告中说明并选择合适的测试参数。
+
+## Profiling 数据点（可直接进报告）
+- **Nsight Systems（nsys）**：
+  - profile 文件：`awave-nsys-20260206-093807.nsys-rep`（A100，shape=256^3，nsteps=4,out_period=4）
+  - `nsys stats --report cuda_gpu_kern_sum` 的结论要点：
+    - 计算时间几乎全部集中在 **内域 stencil kernel**（CUDA `step_kernel_interior` 与 OpenMP offload 对应内域 kernel）。
+    - 边界层 kernel 的总耗时占比很小（每 step 的边界核仅 ~15–19 us 量级）。
+- **Nsight Compute（ncu，聚焦 CUDA 内域 kernel）**：
+  - profile 文件：`awave-ncu-20260206-093818.ncu-rep`
+  - Roofline（`SpeedOfLight_RooflineChart`）核心数据：
+    - Achieved **DRAM Bandwidth ≈ 1.37 TByte/s**
+    - Workload achieved **~9% FP64 peak**（典型带宽受限行为）
 
 ## Section 3: CUDA vs OpenMP 对比
 - **维度**：
