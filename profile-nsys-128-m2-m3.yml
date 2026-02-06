@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-nsys-128-modes-
+  labels:
+    kueue.x-k8s.io/queue-name: eidf018ns-profiling-queue
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 600
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+        command:
+          - bash
+          - -lc
+          - >-
+            set -euo pipefail;
+            run_mode() {
+              export AWAVE_KERNEL_MODE=$1;
+              printenv AWAVE_KERNEL_MODE;
+              nsys profile -t cuda,nvtx,osrt -o awave-nsys-128-m$1-$(date +%Y%m%d-%H%M%S) --force-overwrite=true build-dev/awave -shape 128,128,128 -nsteps 20 -out_period 20 /tmp/awave-nsys-128-m$1;
+              rm -f /tmp/awave-nsys-128-m$1*.vtkhdf || true;
+            };
+            run_mode 2;
+            run_mode 3;
+        resources:
+          requests:
+            cpu: 1
+            memory: 8Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 8Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB

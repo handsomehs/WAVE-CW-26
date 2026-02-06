@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-correct-mig-m2-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 600
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+          - name: AWAVE_KERNEL_MODE
+            value: "2"
+        command:
+          - bash
+          - -lc
+          - >-
+            set -euo pipefail;
+            printenv AWAVE_KERNEL_MODE;
+            stdbuf -oL -eL build-dev/awave
+            -shape 64,64,64
+            -nsteps 100
+            -out_period 10
+            /tmp/awave-correct-mig-m2;
+            rm -f /tmp/awave-correct-mig-m2*.vtkhdf || true;
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 2Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB-MIG-1g.5gb

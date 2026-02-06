@@ -226,3 +226,22 @@
 - **profiling 证据（小规模 nsys）**：
   - `awave-nsys-32-20260206-112413.nsys-rep`：
     - `cuda_gpu_kern_sum`：CUDA 路径每 step 仅 1 个 `step_kernel`（200 次）；OpenMP 路径每 step 仅 1 个 offload kernel（200 次）；对比此前分域路径每 step 需要 3 次 kernel/offload，launch 数显著减少。
+
+## 16. 1/2/3 kernel 全量扫频 + 自动模式决策（已完成 + profiling）
+- **实现细节（`src/wave_cuda.cu`, `src/wave_omp.cpp`）**：
+  - 新增环境变量 `AWAVE_KERNEL_MODE`：`1/2/3` 可强制选择 1/2/3 kernel（CUDA 与 OpenMP 一致），便于批量对比。
+  - CUDA 2-kernel 路径：`step_kernel_core_ybound`（内域 + y-boundary） + `step_kernel_xbound`（x-boundary）。
+  - OpenMP 2-offload 路径与 CUDA 一致：内域 + y-boundary 合并为一个 offload，x-boundary 单独 offload。
+  - **自动模式决策**：根据 sweep 结果，auto 默认使用 **mode1（单 kernel/offload）**；mode2/3 仅保留用于性能对比。
+- **正确性（A100 全量 sweep）**：
+  - Job：`awave-sweep-a100-kmodes-6jln8`（见 `run-sweep-a100-kernel-modes.yml`）
+  - 所有形状 × 3 模式均显示：`Number of differences detected = 0`（CUDA / OpenMP）。
+- **性能结论（mean SU/s）**：
+  - **CUDA**：mode1 在 15/15 形状中表现最佳或并列最佳；mode3 仅在 384^3 略优（~2%）。
+  - **OpenMP**：mode1 在 15/15 形状中均为最佳。
+  - **mode2**：未在任何形状上成为最佳。
+- **profiling（nsys）**：
+  - `awave-nsys-128-m2-20260206-143505.nsys-rep`（mode2，128^3）
+  - `awave-nsys-128-m3-20260206-143511.nsys-rep`（mode3，128^3）
+- **文档更新**：
+  - `report_content.md` 末尾追加完整 sweep 表格（可直接用于报告/附录）。

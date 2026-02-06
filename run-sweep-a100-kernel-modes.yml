@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-sweep-a100-kmodes-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 7200
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+        command:
+          - bash
+          - -lc
+          - >-
+            set -euo pipefail;
+            run_case() {
+              export AWAVE_KERNEL_MODE=$1;
+              echo "===== MODE=$1 CASE shape=$2 nsteps=$3 out_period=$4 =====";
+              stdbuf -oL -eL build-dev/awave -shape "$2" -nsteps "$3" -out_period "$4" "/tmp/awave-km$1-$5";
+              rm -f "/tmp/awave-km$1-$5"*.vtkhdf || true;
+            };
+            run_shape() {
+              run_case 1 "$1" "$2" "$3" "$4";
+              run_case 2 "$1" "$2" "$3" "$4";
+              run_case 3 "$1" "$2" "$3" "$4";
+            };
+            run_shape 32,32,32 200 100 32;
+            run_shape 64,64,64 200 100 64;
+            run_shape 96,96,96 200 100 96;
+            run_shape 128,128,128 200 100 128;
+            run_shape 160,160,160 100 50 160;
+            run_shape 192,192,192 50 25 192;
+            run_shape 224,224,224 50 25 224;
+            run_shape 256,256,256 50 25 256;
+            run_shape 320,320,320 20 10 320;
+            run_shape 384,384,384 20 10 384;
+            run_shape 512,64,512 20 10 512x64x512;
+            run_shape 640,64,640 20 10 640x64x640;
+            run_shape 768,64,768 20 10 768x64x768;
+            run_shape 896,64,896 20 10 896x64x896;
+            run_shape 1000,64,1000 20 10 1000x64x1000;
+        resources:
+          requests:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB

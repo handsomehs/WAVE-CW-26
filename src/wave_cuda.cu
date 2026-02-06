@@ -7,6 +7,7 @@
 #include <cuda_runtime.h>
 #include <nvtx3/nvtx3.hpp>
 
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
@@ -20,6 +21,22 @@
 static std::size_t padded_size(Params const& params) {
     auto [nx, ny, nz] = params.shape;
     return static_cast<std::size_t>(nx + 2) * static_cast<std::size_t>(ny + 2) * static_cast<std::size_t>(nz + 2);
+}
+
+// Allow benchmarking different kernel decomposition strategies without
+// recompiling. This is intentionally a simple numeric interface so it can be
+// set from KGPU YAMLs:
+//   AWAVE_KERNEL_MODE=1  -> force single-kernel update (branch on damping)
+//   AWAVE_KERNEL_MODE=2  -> force two-kernel update (interior + combined boundary)
+//   AWAVE_KERNEL_MODE=3  -> force three-kernel update (interior + x/y boundary kernels)
+// Unset / any other value keeps "auto" behaviour.
+static int kernel_mode_from_env() {
+    const char* env = std::getenv("AWAVE_KERNEL_MODE");
+    if (!env || env[0] == '\0') return 0;
+    if (env[0] == '1') return 1;
+    if (env[0] == '2') return 2;
+    if (env[0] == '3') return 3;
+    return 0;
 }
 
 // Trigger the first kernel launch path early so one-time CUDA initialisation
@@ -333,6 +350,49 @@ __global__ void step_kernel_ybound(double const* __restrict__ u_prev,
     u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
 }
 
+// Two-kernel update strategy: merge the interior kernel and the y-boundary
+// kernel into one launch, and keep the x-boundary launch separate.
+//
+// Rationale: the damping field is non-zero iff (i in x-boundary) OR (j in
+// y-boundary). This kernel runs only for i in the interior range, so it only
+// needs to apply damping for y-boundary j values.
+__global__ void step_kernel_core_ybound(double const* __restrict__ u_prev,
+                                        double const* __restrict__ u_now,
+                                        double* __restrict__ u_next,
+                                        double const* __restrict__ cs2_k,
+                                        double const* __restrict__ damp_xy,
+                                        int nx_inner, int ny, int nz,
+                                        int u_stride_x, int u_stride_y,
+                                        int nbl,
+                                        double factor, double dt) {
+    int k = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+    int j = static_cast<int>(blockIdx.y * blockDim.y + threadIdx.y);
+    int i_inner = static_cast<int>(blockIdx.z * blockDim.z + threadIdx.z);
+    if (i_inner >= nx_inner || j >= ny || k >= nz) return;
+
+    int i = i_inner + nbl;
+    int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+
+    double center = u_now[u_idx];
+    double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+               + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+               + u_now[u_idx - 1] + u_now[u_idx + 1]
+               - 6.0 * center;
+    double value = factor * cs2_k[k] * lap;
+
+    bool const is_yb = (j < nbl) || (j >= (ny - nbl));
+    if (!is_yb) {
+        u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+        return;
+    }
+
+    double d = damp_xy[i * ny + j];
+    double inv_den = 1.0 / (1.0 + d * dt);
+    double num = 1.0 - d * dt;
+    value *= inv_den;
+    u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+}
+
 void CudaWaveSimulation::run(int n) {
     nvtx3::scoped_range r{"run"};
     if (!impl) {
@@ -350,42 +410,60 @@ void CudaWaveSimulation::run(int n) {
     double dt = params.dt;
     double factor = dt * dt / (params.dx * params.dx);
 
-    dim3 block(32, 4, 2);
-    dim3 grid(ceildiv(nz, static_cast<int>(block.x)),
-              ceildiv(ny, static_cast<int>(block.y)),
-              ceildiv(nx, static_cast<int>(block.z)));
+    dim3 block_ijk(32, 4, 2);
+    dim3 grid_full(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                   ceildiv(ny, static_cast<int>(block_ijk.y)),
+                   ceildiv(nx, static_cast<int>(block_ijk.z)));
 
     bool const have_interior = (nbl > 0) && (nx > 2 * nbl) && (ny > 2 * nbl);
     int const nx_inner = have_interior ? (nx - 2 * nbl) : 0;
     int const ny_inner = have_interior ? (ny - 2 * nbl) : 0;
 
-    // Domain splitting (interior + x/y boundary slabs) reduces memory traffic in
-    // large problems, but it also increases per-step launch overhead (3 kernels
-    // instead of 1). For small domains, launch overhead dominates, so prefer a
-    // single kernel with the original per-point damping branch.
-    std::size_t constexpr split_threshold_sites = 1'000'000;
-    std::size_t const nsites = static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * static_cast<std::size_t>(nz);
-    bool const use_split = have_interior && (nsites >= split_threshold_sites);
+    // Domain splitting reduces memory traffic in large problems, but increases
+    // per-step launch overhead. We support multiple strategies:
+    //   1 kernel: full domain, branch on damping (best for very small domains)
+    //   2 kernel: (interior + y-boundary) + x-boundary kernels
+    //   3 kernel: interior + x/y boundary kernels (most specialised)
+    //
+    // "Auto" defaults to the 1-kernel path; 2/3-kernel modes are still
+    // available for benchmarking via AWAVE_KERNEL_MODE.
+    int mode = 0; // 0=auto, 1=one-kernel, 2=two-kernel, 3=three-kernel
+    int const requested_mode = kernel_mode_from_env();
+    if (!have_interior) {
+        mode = 1;
+    } else if (requested_mode == 1 || requested_mode == 2 || requested_mode == 3) {
+        mode = requested_mode;
+    } else {
+        mode = 1;
+    }
 
     dim3 grid_inner;
     dim3 grid_xb;
     dim3 grid_yb;
-    if (use_split) {
-        grid_inner = dim3(ceildiv(nz, static_cast<int>(block.x)),
-                          ceildiv(ny_inner, static_cast<int>(block.y)),
-                          ceildiv(nx_inner, static_cast<int>(block.z)));
-        grid_xb = dim3(ceildiv(nz, static_cast<int>(block.x)),
-                       ceildiv(ny, static_cast<int>(block.y)),
-                       ceildiv(2 * nbl, static_cast<int>(block.z)));
-        grid_yb = dim3(ceildiv(nz, static_cast<int>(block.x)),
-                       ceildiv(2 * nbl, static_cast<int>(block.y)),
-                       ceildiv(nx_inner, static_cast<int>(block.z)));
+    dim3 grid_core;
+    if (mode == 3) {
+        grid_inner = dim3(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                          ceildiv(ny_inner, static_cast<int>(block_ijk.y)),
+                          ceildiv(nx_inner, static_cast<int>(block_ijk.z)));
+        grid_xb = dim3(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                       ceildiv(ny, static_cast<int>(block_ijk.y)),
+                       ceildiv(2 * nbl, static_cast<int>(block_ijk.z)));
+        grid_yb = dim3(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                       ceildiv(2 * nbl, static_cast<int>(block_ijk.y)),
+                       ceildiv(nx_inner, static_cast<int>(block_ijk.z)));
+    } else if (mode == 2) {
+        grid_core = dim3(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                         ceildiv(ny, static_cast<int>(block_ijk.y)),
+                         ceildiv(nx_inner, static_cast<int>(block_ijk.z)));
+        grid_xb = dim3(ceildiv(nz, static_cast<int>(block_ijk.x)),
+                       ceildiv(ny, static_cast<int>(block_ijk.y)),
+                       ceildiv(2 * nbl, static_cast<int>(block_ijk.z)));
     }
 
     for (int i = 0; i < n; ++i) {
-        if (use_split) {
+        if (mode == 3) {
             // 1) Interior (undamped) region.
-            step_kernel_interior<<<grid_inner, block, 0, impl.stream>>>(
+            step_kernel_interior<<<grid_inner, block_ijk, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
                     impl.d_cs2_k,
                     nx_inner, ny_inner, nz,
@@ -395,7 +473,7 @@ void CudaWaveSimulation::run(int n) {
             CUDA_CHECK(cudaGetLastError());
 
             // 2) x boundary layers (includes corners).
-            step_kernel_xbound<<<grid_xb, block, 0, impl.stream>>>(
+            step_kernel_xbound<<<grid_xb, block_ijk, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx, ny, nz,
@@ -405,7 +483,7 @@ void CudaWaveSimulation::run(int n) {
             CUDA_CHECK(cudaGetLastError());
 
             // 3) y boundary layers excluding x boundary layers.
-            step_kernel_ybound<<<grid_yb, block, 0, impl.stream>>>(
+            step_kernel_ybound<<<grid_yb, block_ijk, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx_inner, ny, nz,
@@ -413,10 +491,29 @@ void CudaWaveSimulation::run(int n) {
                     nbl,
                     factor, dt);
             CUDA_CHECK(cudaGetLastError());
+        } else if (mode == 2) {
+            // Two-kernel split: (interior + y-boundary) + x-boundary.
+            step_kernel_core_ybound<<<grid_core, block_ijk, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2_k, impl.d_damp_xy,
+                    nx_inner, ny, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    nbl,
+                    factor, dt);
+            CUDA_CHECK(cudaGetLastError());
+
+            step_kernel_xbound<<<grid_xb, block_ijk, 0, impl.stream>>>(
+                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_cs2_k, impl.d_damp_xy,
+                    nx, ny, nz,
+                    impl.u_stride_x, impl.u_stride_y,
+                    nbl,
+                    factor, dt);
+            CUDA_CHECK(cudaGetLastError());
         } else {
             // Small-problem path: one kernel with the original per-point damping
             // branch to reduce launch overhead.
-            step_kernel<<<grid, block, 0, impl.stream>>>(
+            step_kernel<<<grid_full, block_ijk, 0, impl.stream>>>(
                     impl.d_prev, impl.d_now, impl.d_next,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx, ny, nz,

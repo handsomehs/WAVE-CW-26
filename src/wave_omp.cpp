@@ -4,7 +4,19 @@
 #include "wave_omp.h"
 
 #include <omp.h>
+#include <cstdlib>
 #include <vector>
+
+// Allow benchmarking different kernel decomposition strategies without
+// recompiling. See `wave_cuda.cu` for the full description.
+static int kernel_mode_from_env() {
+    const char* env = std::getenv("AWAVE_KERNEL_MODE");
+    if (!env || env[0] == '\0') return 0;
+    if (env[0] == '1') return 1;
+    if (env[0] == '2') return 2;
+    if (env[0] == '3') return 3;
+    return 0;
+}
 
 // This struct can hold any data you need to manage running on the device
 //
@@ -186,13 +198,25 @@ void OmpWaveSimulation::run(int n) {
     int const nx_inner = have_interior ? (nx - 2 * nbl) : 0;
     int const ny_inner = have_interior ? (ny - 2 * nbl) : 0;
 
-    // As in the CUDA implementation: splitting into interior/boundary offloads
-    // improves steady-state throughput, but increases launch overhead. For
-    // small domains, use a single offload region with the original per-point
-    // damping branch.
-    std::size_t constexpr split_threshold_sites = 1'000'000;
-    std::size_t const nsites = static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * static_cast<std::size_t>(nz);
-    bool const use_split = have_interior && (nsites >= split_threshold_sites);
+    // As in the CUDA implementation: splitting improves throughput on large
+    // domains (less memory traffic and fewer branches), but increases launch
+    // overhead. We support 1/2/3-offload strategies controlled by the same
+    // `AWAVE_KERNEL_MODE` environment variable:
+    //   1: single offload over full domain (branch on damping)
+    //   2: (interior + y-boundary) + x-boundary offloads
+    //   3: interior + x/y boundary offloads
+    //
+    // "Auto" defaults to the 1-offload path; 2/3-offload modes remain
+    // available for benchmarking via AWAVE_KERNEL_MODE.
+    int mode = 0; // 0=auto, 1=one-kernel, 2=two-kernel, 3=three-kernel
+    int const requested_mode = kernel_mode_from_env();
+    if (!have_interior) {
+        mode = 1;
+    } else if (requested_mode == 1 || requested_mode == 2 || requested_mode == 3) {
+        mode = requested_mode;
+    } else {
+        mode = 1;
+    }
 
     for (int step = 0; step < n; ++step) {
         double* u_prev = impl.d_prev;
@@ -207,7 +231,7 @@ void OmpWaveSimulation::run(int n) {
         // boundary layers (see initialisation in wave_cpu.cpp). Splitting the
         // domain lets the bulk update avoid loading `d_damp_xy` and removes the
         // per-point branch.
-        if (use_split) {
+        if (mode == 3) {
             // 1) Interior (undamped): i=[nbl, nx-nbl), j=[nbl, ny-nbl).
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
@@ -266,6 +290,62 @@ void OmpWaveSimulation::run(int n) {
                     for (int k = 0; k < nz; ++k) {
                         int i = ii + nbl;
                         int j = j_in + ((j_in >= nbl) ? (ny - 2 * nbl) : 0);
+                        int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+
+                        double center = u_now[u_idx];
+                        double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+                                   + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+                                   + u_now[u_idx - 1] + u_now[u_idx + 1]
+                                   - 6.0 * center;
+                        double value = factor * d_cs2_k[k] * lap;
+
+                        double d = d_damp_xy[i * ny + j];
+                        double inv_den = 1.0 / (1.0 + d * dt);
+                        double num = 1.0 - d * dt;
+                        value *= inv_den;
+                        u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                    }
+                }
+            }
+        } else if (mode == 2) {
+            // 1) i interior for all j: only y-boundary points are damped.
+            #pragma omp target teams distribute parallel for collapse(3) \
+                device(device) \
+                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+            for (int ii = 0; ii < nx_inner; ++ii) {
+                for (int j = 0; j < ny; ++j) {
+                    for (int k = 0; k < nz; ++k) {
+                        int i = ii + nbl;
+                        int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
+
+                        double center = u_now[u_idx];
+                        double lap = u_now[u_idx - u_stride_x] + u_now[u_idx + u_stride_x]
+                                   + u_now[u_idx - u_stride_y] + u_now[u_idx + u_stride_y]
+                                   + u_now[u_idx - 1] + u_now[u_idx + 1]
+                                   - 6.0 * center;
+                        double value = factor * d_cs2_k[k] * lap;
+                        bool const is_yb = (j < nbl) || (j >= (ny - nbl));
+                        if (!is_yb) {
+                            u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+                        } else {
+                            double d = d_damp_xy[i * ny + j];
+                            double inv_den = 1.0 / (1.0 + d * dt);
+                            double num = 1.0 - d * dt;
+                            value *= inv_den;
+                            u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                        }
+                    }
+                }
+            }
+
+            // 2) x boundary layers (includes corners).
+            #pragma omp target teams distribute parallel for collapse(3) \
+                device(device) \
+                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+            for (int i_in = 0; i_in < 2 * nbl; ++i_in) {
+                for (int j = 0; j < ny; ++j) {
+                    for (int k = 0; k < nz; ++k) {
+                        int i = i_in + ((i_in >= nbl) ? (nx - 2 * nbl) : 0);
                         int u_idx = (i + 1) * u_stride_x + (j + 1) * u_stride_y + (k + 1);
 
                         double center = u_now[u_idx];
