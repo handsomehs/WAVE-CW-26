@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-ncu-
+  labels:
+    kueue.x-k8s.io/queue-name: eidf018ns-profiling-queue
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 300
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: HOME
+            value: $shared_pvc_remote
+        command:
+          - bash
+          - -c
+          - >-
+            ncu -o $(KGPU_JOB_NAME)
+            build-dev/awave -shape 32,32,32 $(KGPU_JOB_NAME)
+        resources:
+          requests:
+            cpu: 1
+            memory: 1Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 1Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB

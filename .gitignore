@@ -1,0 +1,8 @@
+*~
+build*
+cmake-build*
+*.vtkhdf
+*.log
+*.nsys-rep
+*.ncu-rep
+*.tar.gz
