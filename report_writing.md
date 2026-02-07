@@ -1,8 +1,8 @@
-# ASPP Coursework 1 Report (中文写作稿，可直接改成 3 页 PDF)
+# ASPP Coursework 1 Report (中文写作稿)
 
 > 报告按 `README.md` 要求包含 3 个部分：**(1) 理论性能估算**、**(2) 实现选择与性能证据**、**(3) CUDA vs OpenMP 对比与推荐**。无需写引言/结论。
 >
-> 说明：本稿引用的数据来自本目录中的源码与测试/Profiling 产物（例如 `src/wave_cpu.cpp`、`src/main.cpp`、`src/wave_cuda.cu`、`src/wave_omp.cpp`、`report_content.md`、`run-sweep-a100-kernel-modes.yml`、`awave-nsys-*.nsys-rep`、`awave-ncu-*.ncu-rep`）。将其排版为 10pt、<=3 页的 PDF 即可提交。
+> 说明：本稿引用的数据来自本目录中的源码与测试/Profiling 产物（例如 `src/wave_cpu.cpp`、`src/main.cpp`、`src/wave_cuda.cu`、`src/wave_omp.cpp`、`report_content.md`、`run-sweep-a100-kernel-modes.yml`、`awave-nsys-*.nsys-rep`、`awave-ncu-*.ncu-rep`）。PDF要求为 10pt、<=3 页。
 
 ---
 
@@ -119,6 +119,8 @@ Nsight Compute（`ncu`）：
 ### 2.4 32–1000 尺度的性能结果（mode1，mean SU/s）
 下表摘自 A100 sweep（`run-sweep-a100-kernel-modes.yml` 的 mode1 结果；不同尺寸用不同 nsteps/out_period 以获得稳定统计，但 SU/s 已按 “网格点数×步数/时间” 归一化，可横向比较）：
 
+> 说明：从 512 开始使用形状 **(L, 64, L)**（而非 L^3）来覆盖到 L=1000，同时把总网格点数/输出体积控制在可测范围内；并且由于 `src/main.cpp` 的 checker 循环对 k 维上界使用了 `nx+2`（隐含假设 **nx==nz**），因此非立方测试保持 `nx==nz` 以避免误判。
+
 | shape | CPU (SU/s) | CUDA (SU/s) | OpenMP (SU/s) | OpenMP/CUDA |
 | --- | --- | --- | --- | --- |
 | 32^3 | 3.45e8 | 6.54e9 | 2.31e9 | 0.35 |
@@ -173,4 +175,3 @@ CUDA：
 2. NVIDIA. *CUDA C++ Programming Guide*（内存层次、并行执行模型等）。
 3. OpenMP ARB. *OpenMP Application Programming Interface*（target offload 语义与实现）。
 4. NVIDIA. *Nsight Systems / Nsight Compute Documentation*（nvtx、roofline 指标解释）。
-
