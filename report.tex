@@ -1,0 +1,288 @@
+\documentclass[10pt]{article}
+
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{titling}
+\usepackage{url}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlength{\droptitle}{-1.2cm}
+
+\begin{document}
+
+\title{\vspace{-1cm}\textbf{ASPP Coursework 1 Report}\vspace{-0.2cm}}
+
+\author{Exam number: \texttt{B281684}}
+\date{}
+\maketitle
+\vspace{-5em}
+
+\section*{1.\ \ A100 performance estimate (site updates/s)}
+
+A \emph{site update} is one time-step update for one grid point \((i,j,k)\) in
+\texttt{step()} (\texttt{src/wave\_cpu.cpp}). The scheme uses a \(7\)-point
+Laplacian and a damping term in the \(x/y\) boundary layers:
+\begin{align}
+\Delta u &\approx u_{i-1,j,k}+u_{i+1,j,k}+u_{i,j-1,k}+u_{i,j+1,k}+u_{i,j,k-1}+u_{i,j,k+1}-6u_{i,j,k}, \\
+u^{n+1} &= 2u^n-u^{n-1} + \left(\frac{\Delta t^2}{\Delta x^2}\right)c^2\Delta u \quad (d=0), \\
+u^{n+1} &= \frac{2u^n-(1-d\Delta t)u^{n-1} + \left(\frac{\Delta t^2}{\Delta x^2}\right)c^2\Delta u}{1+d\Delta t}\quad (d>0).
+\end{align}
+Most grid points are in the bulk where \(d=0\) (damping is only a thin layer in
+\(x\) and \(y\)).
+
+\textbf{Per-site cost.} For the bulk update (\(d=0\)), the kernel costs about \(12\) FLOPs/site.
+Damped points add a few extra FLOPs and a divide, but for \(n_{\text{bl}}=4\) the undamped
+fraction is \(\frac{(n_x-8)(n_y-8)}{n_x n_y}\) (about \(0.56\) for \(32^3\) and \(0.94\) for
+\(256^3\)).
+
+\textbf{Arithmetic intensity.} \(I=\frac{\text{FLOPs}}{\text{Bytes}}\). A pessimistic DRAM
+model is that each site reads \(10\) doubles and writes \(1\) double:
+\begin{equation}
+B_{\text{naive}} \approx (10\ \text{loads} + 1\ \text{store})\cdot 8 \approx 88\ \mathrm{B/site},
+\qquad
+I_{\text{naive}} \approx \frac{12}{88} \approx 0.14\ \mathrm{FLOP/B}.
+\end{equation}
+For A100, the ridge point is \(I_{\text{ridge}}=\frac{P_{\text{FP64}}}{B_{\text{HBM}}}\approx
+\frac{9.7\times 10^{12}}{1.555\times 10^{12}} \approx 6.2\ \mathrm{FLOP/B}\) \cite{nvidia-a100}.
+Since \(I_{\text{naive}} \ll I_{\text{ridge}}\), performance is limited by HBM bandwidth.
+
+The \(88\,\mathrm{B/site}\) model is pessimistic because the stencil has strong spatial reuse and
+the coefficient arrays are small (\(c^2\) depends only on \(k\); \(d\) depends only on \((i,j)\)).
+With cache reuse and coefficient compression, the effective DRAM traffic can approach
+\(B_{\text{opt}}\approx 24\) to \(32\,\mathrm{B/site}\), giving
+\(I_{\text{opt}}\approx 0.38\text{--}0.50\ \mathrm{FLOP/B}\) (still \(\ll I_{\text{ridge}}\)).
+
+\textbf{Roofline limits.} Using \(P_{\text{FP64}}\approx 9.7\times 10^{12}\,\mathrm{FLOP/s}\) and
+\(B_{\text{HBM}}\approx 1.555\times 10^{12}\,\mathrm{B/s}\) \cite{nvidia-a100}, the roofline
+ceilings are:
+\begin{align}
+\text{SU/s}_{\text{compute}} &\approx \frac{P_{\text{FP64}}}{12}\approx \frac{9.7\times 10^{12}}{12} \approx 8.1\times 10^{11}, \\
+\text{SU/s}_{\text{BW,naive}} &\approx \frac{B_{\text{HBM}}}{B_{\text{naive}}}\approx \frac{1.555\times 10^{12}}{88} \approx 1.8\times 10^{10}, \\
+\text{SU/s}_{\text{BW,opt}} &\approx \left[\frac{B_{\text{HBM}}}{32},\frac{B_{\text{HBM}}}{24}\right]\approx (4.9\text{--}6.5)\times 10^{10}.
+\end{align}
+I therefore use \textbf{\(\text{SU/s}_{\max}\approx 6\times 10^{10}\)} as the practical
+theoretical upper limit on one A100 for large problems; small problems will fall below this
+due to launch/offload overhead.
+
+\section*{2.\ \ Implementation choices and performance evidence (32--1000)}
+
+\subsection*{2.1\ \ Setup and metric}
+
+The program runs CPU reference, then CUDA, then OpenMP offload, and checks both
+GPU results against the CPU with tolerance \(\epsilon=10^{-8}\)
+(\texttt{src/main.cpp}). All results reported here had
+\texttt{Number of differences detected = 0}.
+Performance is reported as mean site updates per second (SU/s) over timed chunks
+of \texttt{run()}. File output is excluded from timing because
+\texttt{append\_u\_fields()} runs after each timed chunk.
+\begin{equation}
+\text{SU/s} = \frac{n_x n_y n_z \cdot n_{\text{steps}}}{t_{\text{chunk}}}.
+\end{equation}
+GPU tests used one full \texttt{NVIDIA-A100-SXM4-40GB}.
+For OpenMP, \texttt{OMP\_TARGET\_OFFLOAD=MANDATORY} was set to avoid silent fallback.
+Unless stated otherwise, runs used the default \texttt{-dx 10} and \texttt{-dt 0.002}
+and \(n_{\text{bl}}=4\) (fixed in \texttt{src/main.cpp}). Table~\ref{tab:sups} uses
+\texttt{AWAVE\_KERNEL\_MODE=1}. To reduce noise while keeping output volume small, I used
+\texttt{-nsteps 200 -out\_period 100} for \(L\le 96\), and \texttt{-nsteps 20 -out\_period 10}
+otherwise (two timed chunks in both cases). The code was built with CMake
+\texttt{Release} on EIDF (NVHPC toolchain).
+
+\subsection*{2.2\ \ Key choices}
+
+\begin{itemize}
+\item \textbf{Device-resident fields + pointer rotation:} \texttt{u\_prev/u\_now/u\_next}
+stay on the device for the whole run (\texttt{cudaMalloc} or \texttt{omp\_target\_alloc}).
+Each step writes \texttt{u\_next} and then swaps pointers, so there is no per-step
+device memcpy. For OpenMP, \texttt{is\_device\_ptr} is used so the offload regions
+use the existing device pointers rather than remapping arrays each step.
+\item \textbf{Compressed coefficients:} in the initial conditions,
+\(c^2(i,j,k)\) depends only on \(k\), and \(d(i,j,k)\) depends only on \((i,j)\)
+(\texttt{src/wave\_cpu.cpp}). Both GPU versions store \texttt{cs2\_k[k]} and
+\texttt{damp\_xy[i, j]} on device. This reduces coefficient traffic and makes the
+coefficient arrays small. For \(1000\times 64\times 1000\),
+\(\texttt{cs2\_k}\) is \(1000\) doubles (\(\approx 8\,\mathrm{kB}\)) and
+\(\texttt{damp\_xy}\) is \(1000\cdot 64\) doubles (\(\approx 0.5\,\mathrm{MB}\)).
+\item \textbf{Launch mapping:} CUDA uses a \(3\)D grid with \(\texttt{k}\) mapped to
+\(\texttt{threadIdx.x}\) (block \((32,4,2)\)), which matches the contiguous
+\(\texttt{k}\) dimension in memory and gives coalesced loads for the \(\pm 1\) neighbors.
+OpenMP uses \texttt{teams distribute parallel for collapse(3)} with the same linear
+indexing.
+\item \textbf{Timing fairness:} both implementations run one warm-up kernel/offload
+before the first timed chunk. Device-to-host copies are done in
+\texttt{append\_u\_fields()} for output and checking, so they stay outside the timed
+\texttt{run()} region (matching the driver which excludes I/O from timing).
+\item \textbf{Kernel decomposition sweep:} both implementations support
+\(\texttt{AWAVE\_KERNEL\_MODE}\in\{1,2,3\}\) to split interior/boundary work.
+On the A100 size sweep (\(32\) to \(1000\)), mode \(1\) (single kernel/offload with a
+damping branch) was fastest in \(14/15\) shapes for CUDA and \(15/15\) for OpenMP.
+Mode \(3\) only won for \(384^3\) on CUDA by about \(2\%\) (\(5.37\times 10^{10}\) vs
+\(5.26\times 10^{10}\) SU/s). For small problems, extra launches are expensive; for
+example at \(32^3\), CUDA mode \(1\) reached \(6.54\times 10^{9}\) SU/s while mode \(3\)
+reached \(2.60\times 10^{9}\), and OpenMP mode \(1\) reached \(2.31\times 10^{9}\) while
+mode \(3\) reached \(0.80\times 10^{9}\). I used mode \(1\) as the
+default because the branch only affects a small boundary region, while extra launches
+increase overhead, especially for small and mid-size problems.
+In mode \(1\), the damping branch depends only on \((i,j)\) while threads in a warp vary in
+\(k\) (CUDA block \((32,4,2)\)), so the branch is warp-uniform; only boundary warps do the extra
+damping arithmetic, which is cheaper than launching additional kernels/offloads.
+\end{itemize}
+
+\subsection*{2.3\ \ Results}
+
+To cover sizes up to \(1000\) without very large outputs, I used cubes up to
+\(384^3\), and then rectangular shapes \((L,64,L)\) up to \(L=1000\). I kept
+\(\,n_x=n_z\,\) because the checker in \texttt{src/main.cpp} assumes this for the
+\(k\) loop bound.
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lrrrr}
+\toprule
+Shape & CPU SU/s & CUDA SU/s & OpenMP SU/s & OpenMP/CUDA \\
+\midrule
+\(32^3\) & \(3.45\times 10^{8}\) & \(6.54\times 10^{9}\) & \(2.31\times 10^{9}\) & \(0.35\) \\
+\(64^3\) & \(3.37\times 10^{8}\) & \(3.04\times 10^{10}\) & \(1.42\times 10^{10}\) & \(0.47\) \\
+\(128^3\) & \(3.03\times 10^{8}\) & \(4.64\times 10^{10}\) & \(3.52\times 10^{10}\) & \(0.76\) \\
+\(256^3\) & \(2.90\times 10^{8}\) & \(5.21\times 10^{10}\) & \(4.76\times 10^{10}\) & \(0.91\) \\
+\(384^3\) & \(2.68\times 10^{8}\) & \(5.26\times 10^{10}\) & \(4.95\times 10^{10}\) & \(0.94\) \\
+\(512\times 64\times 512\) & \(3.00\times 10^{8}\) & \(5.10\times 10^{10}\) & \(4.66\times 10^{10}\) & \(0.91\) \\
+\(1000\times 64\times 1000\) & \(2.72\times 10^{8}\) & \textbf{\(5.32\times 10^{10}\)} & \(4.91\times 10^{10}\) & \(0.92\) \\
+\bottomrule
+\end{tabular}
+\caption{Mean SU/s on one A100 (mode \(1\)).}
+\label{tab:sups}
+\end{table}
+
+Trends:
+\begin{itemize}
+\item \textbf{Small sizes} (\(32^3\) to \(96^3\)) are limited by kernel/offload overhead.
+CUDA is faster because the launch path is lighter than OpenMP target offload.
+\item \textbf{Large sizes} (\(\ge 128^3\)) show bandwidth saturation. CUDA stays around
+\(4.6\) to \(5.3\times 10^{10}\) SU/s and OpenMP around \(3.5\) to
+\(4.9\times 10^{10}\) SU/s across the tested range.
+\item \textbf{Speedup vs CPU:} for the large cases in Table~\ref{tab:sups}, CUDA is about
+\(1.8\text{--}2.0\times 10^{2}\times\) faster than the serial CPU, and OpenMP offload
+is about \(1.6\text{--}1.8\times 10^{2}\times\) faster.
+\item \textbf{Comparison to Section~1:} the best CUDA result is 
+\(5.32 \times 10^{10}\) SU/s, about \(0.89\) of the estimated
+\(6\times 10^{10}\) SU/s limit. Nsight Compute roofline for CUDA mode \(1\)
+\texttt{step\_kernel} at shape \(256^3\) reports achieved DRAM bandwidth
+\(\approx 1.37\,\mathrm{TB/s}\) and achieved FP64 throughput \(\sim 9\%\) of peak.
+Using the measured CUDA SU/s \(5.21\times 10^{10}\), the effective DRAM traffic is
+\(\frac{1.37\times 10^{12}}{5.21\times 10^{10}} \approx 26\,\mathrm{B/site}\), which
+matches the \(24\) to \(32\,\mathrm{B/site}\) model in Section~1.
+\end{itemize}
+
+\subsection*{2.4\ \ Extra validation and profiling notes}
+
+Extra validation (all with \(\texttt{diff}=0\)):
+\begin{itemize}
+\item Non-cubic shapes to check there is no dependence on a special geometry:
+\(256\times 96\times 256\) gave \(4.91\times 10^{10}\) (CUDA) and \(4.22\times 10^{10}\)
+(OpenMP) SU/s; \(333^3\) gave \(5.25\times 10^{10}\) (CUDA) and \(4.87\times 10^{10}\)
+(OpenMP) SU/s.
+\item Changed resolution while keeping \(dt/dx\) constant (to match the expected CFL scaling):
+at \(256^3\), \((dx,dt)=(5,0.001)\) and \((20,0.004)\) both matched the CPU reference and kept
+SU/s within the same bandwidth-saturated range.
+\end{itemize}
+
+Profiling observations (Nsight Systems/Compute):
+for \(32^3\), the CUDA step kernel was about \(3.8\,\mu\mathrm{s}\) per step and the OpenMP
+offload kernel about \(4.4\,\mu\mathrm{s}\), so extra launches in modes \(2/3\) reduce performance.
+For a large case (\(1000\times 64\times 1000\)), the \texttt{run} NVTX range was only
+\(\sim 2.6\text{--}3.1\,\mathrm{ms}\) per chunk (two steps), but the \texttt{copyback} range was
+\(\sim 133\text{--}149\,\mathrm{ms}\) per chunk. This is why copyback is kept out of \texttt{run()}
+timings, consistent with the coursework driver.
+
+\section*{3.\ \ CUDA vs OpenMP offload: performance, effort, recommendation}
+
+Performance:
+\begin{itemize}
+\item CUDA was faster for every tested shape. The gap was largest for small problems:
+at \(32^3\), OpenMP reached \(0.35\times\) the CUDA SU/s. This matches the profiling
+results in Section~2.4 (the kernel body is only a few microseconds, so launch/offload
+overhead is significant).
+\item For larger problems (\(\ge 128^3\)), both implementations saturate memory bandwidth.
+OpenMP typically reached \(0.88\) to \(0.94\times\) the CUDA SU/s (Table~\ref{tab:sups}),
+so the remaining gap is mainly runtime and code-generation details.
+\end{itemize}
+
+Ease of implementation and control:
+\begin{itemize}
+\item OpenMP target offload kept the loop structure close to the CPU code. However, to get
+stable performance I still needed explicit device allocation (\texttt{omp\_target\_alloc}),
+explicit copies for initialisation/output, and \texttt{is\_device\_ptr} to avoid implicit
+remapping overhead.
+\item CUDA required more boilerplate but gave direct control of key performance choices:
+explicit stream usage, asynchronous copies for initialisation/copyback, and an explicit
+thread-block shape (\((32,4,2)\)) matched to the contiguous \(\texttt{k}\) dimension.
+This helped reduce overhead at small sizes while keeping bandwidth-saturated performance
+at large sizes \cite{cuda-guide}.
+\end{itemize}
+
+If I could only pick one model for this task, I would choose \textbf{CUDA}. It gives
+higher performance across the full size range, and it is easier to control overhead
+for small problems while still approaching the bandwidth limit for large problems.
+OpenMP offload is still competitive for large stencil problems and would be a good
+choice if portability was the main goal.
+
+\newpage
+
+\begin{thebibliography}{9}
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\bibitem{nvidia-a100}
+NVIDIA. \emph{NVIDIA A100 Tensor Core GPU Datasheet} (SXM4 40GB). 2020. URL:
+\url{https://www.nvidia.com/en-us/data-center/a100/}. Accessed: 2026-02-07.
+
+\bibitem{cuda-guide}
+NVIDIA. \emph{CUDA C++ Programming Guide} (CUDA Toolkit Documentation). URL:
+\url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/}. Accessed: 2026-02-07.
+
+\end{thebibliography}
+
+
+\appendix 
+\section*{Appendix:\ \ Full 32--1000 performance results}
+
+Table~\ref{tab:sweep_32_1000} reports the full sweep results discussed in Sections 2--3
+(A100 full GPU, mean SU/s, mode \(1\)).
+
+\begin{table}[!htbp]
+\centering
+\renewcommand{\arraystretch}{0.92}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrr}
+\toprule
+Shape & CPU SU/s & CUDA SU/s & OpenMP SU/s & OpenMP/CUDA \\
+\midrule
+\(32^3\) & \(3.45\times 10^{8}\) & \(6.54\times 10^{9}\) & \(2.31\times 10^{9}\) & \(0.35\) \\
+\(64^3\) & \(3.37\times 10^{8}\) & \(3.04\times 10^{10}\) & \(1.42\times 10^{10}\) & \(0.47\) \\
+\(96^3\) & \(3.36\times 10^{8}\) & \(5.19\times 10^{10}\) & \(2.85\times 10^{10}\) & \(0.55\) \\
+\(128^3\) & \(3.03\times 10^{8}\) & \(4.64\times 10^{10}\) & \(3.52\times 10^{10}\) & \(0.76\) \\
+\(160^3\) & \(2.84\times 10^{8}\) & \(4.80\times 10^{10}\) & \(4.06\times 10^{10}\) & \(0.85\) \\
+\(192^3\) & \(2.87\times 10^{8}\) & \(4.94\times 10^{10}\) & \(4.34\times 10^{10}\) & \(0.88\) \\
+\(224^3\) & \(2.83\times 10^{8}\) & \(5.13\times 10^{10}\) & \(4.62\times 10^{10}\) & \(0.90\) \\
+\(256^3\) & \(2.90\times 10^{8}\) & \(5.21\times 10^{10}\) & \(4.76\times 10^{10}\) & \(0.91\) \\
+\(256\times 96\times 256\) & \(2.97\times 10^{8}\) & \(4.91\times 10^{10}\) & \(4.22\times 10^{10}\) & \(0.86\) \\
+\(333^3\) & \(2.96\times 10^{8}\) & \(5.25\times 10^{10}\) & \(4.87\times 10^{10}\) & \(0.93\) \\
+\(384^3\) & \(2.68\times 10^{8}\) & \(5.26\times 10^{10}\) & \(4.95\times 10^{10}\) & \(0.94\) \\
+\(512\times 64\times 512\) & \(3.00\times 10^{8}\) & \(5.10\times 10^{10}\) & \(4.66\times 10^{10}\) & \(0.91\) \\
+\(512\times 128\times 512\) & \(2.93\times 10^{8}\) & \(5.26\times 10^{10}\) & \(4.84\times 10^{10}\) & \(0.92\) \\
+\(640\times 64\times 640\) & \(2.74\times 10^{8}\) & \(5.20\times 10^{10}\) & \(4.77\times 10^{10}\) & \(0.92\) \\
+\(768\times 64\times 768\) & \(2.74\times 10^{8}\) & \(5.27\times 10^{10}\) & \(4.70\times 10^{10}\) & \(0.89\) \\
+\(896\times 64\times 896\) & \(2.72\times 10^{8}\) & \(5.30\times 10^{10}\) & \(4.89\times 10^{10}\) & \(0.92\) \\
+\(1000\times 64\times 1000\) & \(2.72\times 10^{8}\) & \(5.32\times 10^{10}\) & \(4.91\times 10^{10}\) & \(0.92\) \\
+\bottomrule
+\end{tabular}
+\caption{Full 32--1000 sweep results (mean SU/s, mode \(1\)).}
+\label{tab:sweep_32_1000}
+\end{table}
+
+
+
+\end{document}
