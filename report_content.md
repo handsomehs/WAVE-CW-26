@@ -63,6 +63,10 @@
   - 256x96x256（nsteps=50,out_period=25）：CPU ≈ 2.97e8，CUDA ≈ 4.91e10，OpenMP ≈ 4.22e10（diff=0）。
   - 512x128x512（nsteps=20,out_period=10）：CPU ≈ 2.93e8，CUDA ≈ 5.26e10，OpenMP ≈ 4.84e10（diff=0）。
   - 333^3（nsteps=20,out_period=10）：CPU ≈ 2.96e8，CUDA ≈ 5.25e10，OpenMP ≈ 4.87e10（diff=0）。
+- **分辨率变更测试：改变 dx/dt（完整 A100，AWAVE_KERNEL_MODE=1，mean SU/s）**：
+  - 目的：README 提到评测可能调整 `-dx/-dt`；这里保持 `dt/dx` 不变（更接近 CFL 安全的做法），验证 GPU 版本仍与 CPU 参考一致。
+  - 256^3（dx=5, dt=0.001, nsteps=20,out_period=10）：CPU ≈ 2.62e8，CUDA ≈ 5.09e10，OpenMP ≈ 4.01e10（diff=0）。
+  - 256^3（dx=20, dt=0.004, nsteps=20,out_period=10）：CPU ≈ 2.60e8，CUDA ≈ 4.99e10，OpenMP ≈ 4.57e10（diff=0）。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 32--96 的小规模下，通过“自适应单核/单 offload”减少每 step 的 kernel 启动次数（3→1），CUDA/OMP 的 SU/s 可提升约 1.5--2.5 倍（见 nsys 的 kernel 统计证据）。

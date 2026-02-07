@@ -260,3 +260,17 @@
   - `512x128x512`：CPU ≈ 2.93e8，CUDA ≈ 5.26e10，OpenMP ≈ 4.84e10。
   - `333^3`：CPU ≈ 2.96e8，CUDA ≈ 5.25e10，OpenMP ≈ 4.87e10。
 - **效果**：进一步证明实现对 `ny` 变化、非幂次尺寸仍保持正确性与接近带宽饱和区间的性能。
+
+## 18. 分辨率变更测试：改变 dx/dt（已完成并实测）
+- **动机**：
+  - README 提到评测可能调整 `-dx/-dt`，需要验证 GPU 版本在不同分辨率下仍与 CPU 参考一致。
+- **测试方法**：
+  - YAML：`run-dxdt-a100.yml`（完整 A100；`OMP_TARGET_OFFLOAD=MANDATORY`；`AWAVE_KERNEL_MODE=1`）。
+  - 为降低不稳定风险，测试保持 `dt/dx` 不变：
+    - `dx=5, dt=0.001`（shape=256^3, nsteps=20,out_period=10）
+    - `dx=20, dt=0.004`（shape=256^3, nsteps=20,out_period=10）
+- **正确性**：
+  - 两组分辨率均显示 `Number of differences detected = 0`（CUDA 与 OpenMP）。
+- **性能（mean SU/s）**：
+  - `dx=5, dt=0.001`：CPU ≈ 2.62e8，CUDA ≈ 5.09e10，OpenMP ≈ 4.01e10。
+  - `dx=20, dt=0.004`：CPU ≈ 2.60e8，CUDA ≈ 4.99e10，OpenMP ≈ 4.57e10。

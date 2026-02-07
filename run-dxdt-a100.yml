@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-dxdt-a100-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 3600
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+          - name: AWAVE_KERNEL_MODE
+            value: "1"
+        command:
+          - bash
+          - -lc
+          - |-
+            set -euo pipefail
+
+            run_case() {
+              echo "===== CASE shape=$1 dx=$2 dt=$3 nsteps=$4 out_period=$5 ====="
+              stdbuf -oL -eL build-dev/awave -shape "$1" -dx "$2" -dt "$3" -nsteps "$4" -out_period "$5" "/tmp/awave-dxdt-$6"
+              rm -f "/tmp/awave-dxdt-$6"*.vtkhdf || true
+            }
+
+            # Keep dt/dx constant (CFL-safe) but change resolution. The CPU reference uses the same
+            # parameters so this is a pure correctness/robustness check for the GPU implementations.
+            run_case 256,256,256 5.0 0.001 20 10 256cube-dx5-dt1e-3
+            run_case 256,256,256 20.0 0.004 20 10 256cube-dx20-dt4e-3
+        resources:
+          requests:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
+

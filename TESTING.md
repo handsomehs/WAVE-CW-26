@@ -112,6 +112,7 @@ Convenience jobs:
 - `run-sweep-a100-kernel-modes.yml`: runs mode 1/2/3 sweeps (set via `AWAVE_KERNEL_MODE`) for the report appendix.
 - `run-large-a100.yml`: runs larger (but checker-safe) shapes with `nx == nz`, up to `1000x64x1000`.
 - `run-extra-a100.yml`: extra validation on full A100 for rectangular shapes (vary `ny`) and a non-power-of-two cube.
+- `run-dxdt-a100.yml`: robustness check for changed `-dx/-dt` (keeps `dt/dx` constant).
 - `profile-nsys-32.yml`: nsys profile for `32^3` to highlight small-problem launch/runtime overhead.
 - `profile-nsys-1000x64x1000.yml`: nsys profile for a large field to quantify `run` vs `copyback`.
 
