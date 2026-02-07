@@ -58,6 +58,11 @@
   - 512x64x512：CPU ≈ 2.81e8，CUDA ≈ 4.89e10，OpenMP ≈ 4.30e10。
   - 768x64x768：CPU ≈ 2.71e8，CUDA ≈ 5.16e10，OpenMP ≈ 4.70e10。
   - 1000x64x1000：CPU ≈ 2.77e8，CUDA ≈ 5.21e10，OpenMP ≈ 4.84e10。
+- **补充形状测试：ny != 64 与非 2^n 立方体（完整 A100，AWAVE_KERNEL_MODE=1，mean SU/s）**：
+  - 目的：验证实现不依赖立方体/幂次尺寸或固定 ny=64 的特例，且保持正确性与带宽饱和区间性能。
+  - 256x96x256（nsteps=50,out_period=25）：CPU ≈ 2.97e8，CUDA ≈ 4.91e10，OpenMP ≈ 4.22e10（diff=0）。
+  - 512x128x512（nsteps=20,out_period=10）：CPU ≈ 2.93e8，CUDA ≈ 5.26e10，OpenMP ≈ 4.84e10（diff=0）。
+  - 333^3（nsteps=20,out_period=10）：CPU ≈ 2.96e8，CUDA ≈ 5.25e10，OpenMP ≈ 4.87e10（diff=0）。
 - **可写入报告的观察点**：
   - 小/中规模下 CUDA 与 OpenMP 均显著快于串行 CPU；CUDA 通常更高。
   - 32--96 的小规模下，通过“自适应单核/单 offload”减少每 step 的 kernel 启动次数（3→1），CUDA/OMP 的 SU/s 可提升约 1.5--2.5 倍（见 nsys 的 kernel 统计证据）。

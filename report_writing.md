@@ -6,7 +6,7 @@
 
 ---
 
-## 1) 单卡 A100 的理论可达性能估算（site updates/s）
+## 1) 单卡 A100 的理论可达性能估算（site updates/s）（最多0.5页）
 
 ### 1.1 算法与每点更新（site update）定义
 本程序求解 3D 波动方程的显式二阶差分格式。对每个网格点 \((i,j,k)\) 的一步时间推进（即一次 *site update*），核心计算来自 `src/wave_cpu.cpp` 的 `step()`：
@@ -56,7 +56,7 @@ u^{n+1} = \frac{2u^n - (1-d\Delta t)u^{n-1} + \text{value}}{1 + d\Delta t}
 
 ---
 
-## 2) 实现选择、优化原因与性能证据（32–1000 尺度）
+## 2) 实现选择、优化原因与性能证据（32–1000 尺度）（1-2页）
 
 ### 2.1 实验设置与计时口径（保证证据可复现）
 - 程序固定执行顺序：CPU 参考 → CUDA → OpenMP offload，并用 `eps=1e-8` 将两种 GPU 结果与 CPU 参考比较（`src/main.cpp` 的 `checker`），本工作所有 sweep 中均得到 `Number of differences detected = 0`。
@@ -142,10 +142,11 @@ Nsight Compute（`ncu`）：
 - **小规模（32–96）**：CUDA/OpenMP 明显受 kernel/offload 启动与运行时开销影响；CUDA 更轻量，因此领先更明显（OpenMP/CUDA≈0.35–0.55）。
 - **中大规模（>=128）**：CUDA SU/s 稳定在 \(\sim 4.6\times 10^{10}\) 到 \(\sim 5.3\times 10^{10}\)，OpenMP 在 \(\sim 3.5\times 10^{10}\) 到 \(\sim 4.9\times 10^{10}\)，表现出**带宽饱和**特征；OpenMP 与 CUDA 的差距缩小到约 6–12%。
 - **与第 1 部分理论上限对比**：大规模下 CUDA 约 \(5.3\times 10^{10}\) SU/s，接近带宽上限估算 \(6.0\times 10^{10}\) SU/s（约 85–90% 量级），与 Nsight Compute 的高带宽利用率一致。
+- **补充验证（避免“只对特定形状有效”）**：在完整 A100 上额外测试了 `256×96×256`、`512×128×512` 与 `333^3`（均 diff=0），CUDA 约 `4.91e10/5.26e10/5.25e10` SU/s，OpenMP 约 `4.22e10/4.84e10/4.87e10` SU/s，说明实现不依赖 `ny=64` 或幂次尺寸的特例。
 
 ---
 
-## 3) CUDA vs OpenMP offload：性能、实现难度与推荐
+## 3) CUDA vs OpenMP offload：性能、实现难度与推荐（0.5-1页）
 
 ### 3.1 性能对比（基于 32–1000 的 sweep）
 - CUDA 在所有测试形状上都更快，优势在小规模最明显（32^3 时 OpenMP 约为 CUDA 的 35%）。

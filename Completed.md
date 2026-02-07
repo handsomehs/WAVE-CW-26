@@ -242,3 +242,21 @@
   - `awave-nsys-128-m3-20260206-143511.nsys-rep`（mode3，128^3）
 - **文档更新**：
   - `report_content.md` 末尾追加完整 sweep 表格（可直接用于报告/附录）。
+
+## 17. 补充测试：ny != 64 与非幂次尺寸（已完成并实测）
+- **动机**：
+  - 评测可能会使用非立方体形状与非幂次尺寸；因此需要补充验证实现的正确性与性能不依赖特定 shape。
+  - 由于 `src/main.cpp` 的 checker 对 k 维上界使用 `nx+2`（隐含 `nx==nz`），补充测试的非立方形状保持 `nx==nz`，避免误判。
+- **测试方法**：
+  - YAML：`run-extra-a100.yml`（完整 A100；`OMP_TARGET_OFFLOAD=MANDATORY`；`AWAVE_KERNEL_MODE=1`）。
+  - 形状与参数：
+    - `256x96x256`（nsteps=50,out_period=25）
+    - `512x128x512`（nsteps=20,out_period=10）
+    - `333^3`（nsteps=20,out_period=10）
+- **正确性**：
+  - 以上三组形状均显示 `Number of differences detected = 0`（CUDA 与 OpenMP）。
+- **性能（mean SU/s）**：
+  - `256x96x256`：CPU ≈ 2.97e8，CUDA ≈ 4.91e10，OpenMP ≈ 4.22e10。
+  - `512x128x512`：CPU ≈ 2.93e8，CUDA ≈ 5.26e10，OpenMP ≈ 4.84e10。
+  - `333^3`：CPU ≈ 2.96e8，CUDA ≈ 5.25e10，OpenMP ≈ 4.87e10。
+- **效果**：进一步证明实现对 `ny` 变化、非幂次尺寸仍保持正确性与接近带宽饱和区间的性能。

@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: awave-extra-a100-
+spec:
+  completions: 1
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 1800
+  template:
+    metadata:
+      name: awave-pod
+    spec:
+      activeDeadlineSeconds: 3600
+      containers:
+      - name: run
+        image: $container
+        env:
+          - name: OMP_TARGET_OFFLOAD
+            value: MANDATORY
+          # Keep this sweep focused on the default (fastest) path.
+          - name: AWAVE_KERNEL_MODE
+            value: "1"
+        command:
+          - bash
+          - -lc
+          - |-
+            set -euo pipefail
+
+            run_case() {
+              echo "===== CASE shape=$1 nsteps=$2 out_period=$3 ====="
+              stdbuf -oL -eL build-dev/awave -shape "$1" -nsteps "$2" -out_period "$3" "/tmp/awave-extra-$4"
+              rm -f "/tmp/awave-extra-$4"*.vtkhdf || true
+            }
+
+            # Rectangular shapes (nx==nz to avoid checker issues in main.cpp).
+            run_case 256,96,256 50 25 256x96x256
+            run_case 512,128,512 20 10 512x128x512
+
+            # Non-power-of-two cube.
+            run_case 333,333,333 20 10 333cube
+        resources:
+          requests:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 1
+            memory: 16Gi
+            nvidia.com/gpu: 1
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
