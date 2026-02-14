@@ -170,7 +170,7 @@ int main(int argc, char const* argv[]) {
             auto [L,M,N] = padded_shape;
             for (unsigned i = 0; i < L; ++i) {
                 for (unsigned j = 0; j < M; ++j) {
-                    for (unsigned k = 0; k < L; ++k) {
+                    for (unsigned k = 0; k < N; ++k) {
                         if (!approxEq(ref_u(i, j, k), test_u(i, j, k), eps)) {
                             nerr += 1;
                             out("Fields differ at ({}, {}, {})", i, j, k);

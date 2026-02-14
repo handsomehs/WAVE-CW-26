@@ -127,10 +127,10 @@ damping arithmetic, which is cheaper than launching additional kernels/offloads.
 
 \subsection*{2.3\ \ Results}
 
-This work used cubes up to
-\(384^3\), and then rectangular shapes \((L,64,L)\) up to \(L=1000\). This keeps the
-output volume manageable while still covering large \(L\) up to \(1000\) in two
-dimensions.
+To cover sizes up to \(1000\) without very large outputs, this work used cubes up to
+\(384^3\), and then rectangular shapes \((L,64,L)\) up to \(L=1000\). Kept
+\(\,n_x=n_z\,\) because the checker in \texttt{src/main.cpp} assumes this for the
+\(k\) loop bound.
 
 \begin{table}[h]
 \centering
@@ -190,7 +190,7 @@ for \(32^3\), the CUDA step kernel was about \(3.8\,\mu\mathrm{s}\) per step and
 offload kernel about \(4.4\,\mu\mathrm{s}\), so extra launches in modes \(2/3\) reduce performance.
 For a large case (\(1000\times 64\times 1000\)), the \texttt{run} NVTX range was only
 \(\sim 2.6\text{--}3.1\,\mathrm{ms}\) per chunk (two steps), but the \texttt{copyback} range was
-\(\sim 133\text{--}149\,\mathrm{ms}\) per chunk. Thus, copyback is kept out of \texttt{run()}
+\(\sim 133\text{--}149\,\mathrm{ms}\) per chunk. This is why copyback is kept out of \texttt{run()}
 timings, consistent with the coursework driver.
 
 \section*{3.\ \ CUDA vs OpenMP offload: performance, effort, recommendation}
