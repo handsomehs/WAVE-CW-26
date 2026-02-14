@@ -100,6 +100,7 @@ OmpWaveSimulation::OmpWaveSimulation(OmpWaveSimulation&&)  noexcept = default;
 OmpWaveSimulation& OmpWaveSimulation::operator=(OmpWaveSimulation&&) = default;
 OmpWaveSimulation::~OmpWaveSimulation() = default;
 
+// Factory method to create an OpenMP-accelerated simulation from a CPU-resident one.
 OmpWaveSimulation OmpWaveSimulation::from_cpu_sim(const fs::path& cp, const WaveSimulation& source) {
     OmpWaveSimulation ans;
     out("Initialising {} simulation as copy of {}...", ans.ID(), source.ID());
@@ -129,7 +130,7 @@ OmpWaveSimulation OmpWaveSimulation::from_cpu_sim(const fs::path& cp, const Wave
     return ans;
 }
 
-
+// Copy device-resident u fields back to host and append to the checkpoint file.
 void OmpWaveSimulation::append_u_fields() {
     if (impl) {
         // Ensure host copies of u are up to date before writing the checkpoint.
@@ -142,6 +143,7 @@ void OmpWaveSimulation::append_u_fields() {
     h5.append_u(u);
 }
 
+// Naive CPU implementation for correctness checking and fallback when no OpenMP target device is available
 static void step_cpu(Params const& params, array3d const& cs2, array3d const& damp, uField& u) {
     auto d2 = params.dx * params.dx;
     auto dt = params.dt;
@@ -365,7 +367,7 @@ void OmpWaveSimulation::run(int n) {
                 }
             }
         } else {
-            // Small-problem path: one offload with the original per-point
+            // one offload with the original per-point
             // damping branch to reduce launch overhead.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \

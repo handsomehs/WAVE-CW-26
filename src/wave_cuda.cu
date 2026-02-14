@@ -134,6 +134,7 @@ CudaWaveSimulation::CudaWaveSimulation(CudaWaveSimulation&&) noexcept = default;
 CudaWaveSimulation& CudaWaveSimulation::operator=(CudaWaveSimulation&&) noexcept = default;
 CudaWaveSimulation::~CudaWaveSimulation() = default;
 
+// Factory method to create a CUDA-accelerated simulation from a CPU-resident one.
 CudaWaveSimulation CudaWaveSimulation::from_cpu_sim(const fs::path& cp, const WaveSimulation& source) {
     CudaWaveSimulation ans;
     out("Initialising {} simulation as copy of {}...", ans.ID(), source.ID());
@@ -165,6 +166,7 @@ CudaWaveSimulation CudaWaveSimulation::from_cpu_sim(const fs::path& cp, const Wa
     return ans;
 }
 
+// Copy device-resident u fields back to host and append to the checkpoint file.
 void CudaWaveSimulation::append_u_fields() {
     if (impl) {
         // Ensure host copies of u are up to date before writing the checkpoint.
@@ -180,6 +182,7 @@ void CudaWaveSimulation::append_u_fields() {
     h5.append_u(u);
 }
 
+// Naive CPU implementation for correctness checking and fallback when no CUDA device is available
 static void step_cpu(Params const& params, array3d const& cs2, array3d const& damp, uField& u) {
     auto d2 = params.dx * params.dx;
     auto dt = params.dt;
@@ -215,6 +218,8 @@ static void step_cpu(Params const& params, array3d const& cs2, array3d const& da
     u.advance();
 }
 
+// one-kernel update: each thread computes one point, 
+// branching on the damping field to apply the correct update.
 __global__ void step_kernel(double const* __restrict__ u_prev,
                             double const* __restrict__ u_now,
                             double* __restrict__ u_next,
