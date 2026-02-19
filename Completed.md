@@ -274,3 +274,28 @@
 - **性能（mean SU/s）**：
   - `dx=5, dt=0.001`：CPU ≈ 2.62e8，CUDA ≈ 5.09e10，OpenMP ≈ 4.01e10。
   - `dx=20, dt=0.004`：CPU ≈ 2.60e8，CUDA ≈ 4.99e10，OpenMP ≈ 4.57e10。
+
+## 19. 设备端 u 场缓冲从 3 个降到 2 个（避免极大尺寸显存 OOM，已完成并复测）
+- **动机**：
+  - `awave` 在主程序中会同时构造 CUDA 与 OpenMP 两个 GPU 实现，因此两者的设备端分配会在同一张 A100 上同时存在。
+  - 原先每个实现按 CPU 的三缓冲（prev/now/next）在 device 上各分配 3 个 padded `u` 场，极大尺寸（例如 1000^3）会导致两套实现合计显存超过 A100 40GB 上限。
+- **原理**：
+  - 更新公式只在同一个网格点读取 `u_prev`（不读取 `u_prev` 的邻居），因此可以安全地把 `u_next` 写回到 `u_prev` 的位置（in-place update），再与 `u_now` 交换指针完成 ping-pong。
+- **实现细节**：
+  - CUDA（`src/wave_cuda.cu`）：
+    - 移除 `d_next` 的分配/拷贝/释放；每步 kernel 输出写入 `d_prev`（即 `u_next == u_prev`），step 后 `swap(d_prev, d_now)`。
+    - 由于 `u_prev` 与 `u_next` 在该路径下别名相同，移除了 kernel 形参中 `u_prev/u_next` 的 `__restrict__`，避免别名带来的未定义行为；`u_now` 仍保留 `__restrict__`。
+  - OpenMP（`src/wave_omp.cpp`）：
+    - 同样移除第三个 device 缓冲；每步在写回 `d_prev[u_idx]` 前先用局部变量保存旧的 `d_prev[u_idx]`，确保读写顺序正确；step 后 `swap(d_prev, d_now)`。
+- **显存可行性验证（完整 A100）**：
+  - 使用 `build-dev/gpu_alloc_check` 做“仅分配不运行”的 sanity check，模拟 CUDA+OpenMP 两个实现同时驻留的主要 device 分配：
+    - shape=1000x1000x1000：单场 padded 大小约 7.50 GiB；两实现合计约 30.00 GiB。
+    - Job：`awave-alloc-a100-7x5zn`，输出显示 allocations succeeded，分配后仍有约 9.08 GiB free。
+- **正确性与性能复测（diff=0，且 SU/s 不回退）**：
+  - MIG correctness：`awave-correct-mig-7lbvc`，CUDA/OMP 均 `Number of differences detected = 0`。
+  - A100 perf 128^3：`awave-perf-a100-128-dhhw9`，CUDA mean ≈ 3.60e10，OpenMP mean ≈ 3.17e10，diff=0。
+  - A100 perf 256^3：`awave-perf-a100-b6k8s`，CUDA mean ≈ 4.23e10，OpenMP mean ≈ 4.38e10，diff=0。
+  - A100 large（到 1000）：`awave-large-a100-lkkck`：
+    - 512x64x512：CUDA mean ≈ 4.73e10，OpenMP mean ≈ 4.87e10，diff=0。
+    - 768x64x768：CUDA mean ≈ 4.95e10，OpenMP mean ≈ 5.08e10，diff=0。
+    - 1000x64x1000：CUDA mean ≈ 4.29e10（chunk 间波动），OpenMP mean ≈ 5.15e10（更稳定），diff=0。

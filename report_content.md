@@ -58,6 +58,18 @@
   - 512x64x512：CPU ≈ 2.81e8，CUDA ≈ 4.89e10，OpenMP ≈ 4.30e10。
   - 768x64x768：CPU ≈ 2.71e8，CUDA ≈ 5.16e10，OpenMP ≈ 4.70e10。
   - 1000x64x1000：CPU ≈ 2.77e8，CUDA ≈ 5.21e10，OpenMP ≈ 4.84e10。
+- **1000^3 显存可行性（完整 A100，allocation-only sanity check）**：
+  - 背景：真正运行 `shape=1000,1000,1000` 会产生极大的 host 侧内存与 HDF5 输出压力（CPU/CUDA/OpenMP 三套状态 + 输出文件体积均为几十 GB 量级），因此这里用“只做 device 分配”的小程序验证显存是否会 OOM。
+  - 结果（`build-dev/gpu_alloc_check`，同时模拟 CUDA+OpenMP 两实现常驻的主要分配）：
+    - padded elements = 1002^3 = 1,006,012,008
+    - 每个 padded u 场 ≈ 7.50 GiB
+    - 两实现合计（2 buffers each + 压缩系数数组）≈ 30.00 GiB
+    - 实测：分配成功，分配后仍剩余约 9.08 GiB free（A100 total ≈ 39.49 GiB）
+- **复测（2026-02-19，commit=0205882，diff=0 且 SU/s 不回退）**：
+  - MIG correctness（64^3，nsteps=100,out_period=10）：CUDA/OMP 均 `0 differences`。
+  - A100 perf（128^3，nsteps=20,out_period=10）：CUDA mean ≈ 3.60e10，OpenMP mean ≈ 3.17e10。
+  - A100 perf（256^3，nsteps=4,out_period=2）：CUDA mean ≈ 4.23e10，OpenMP mean ≈ 4.38e10。
+  - A100 large（512x64x512 / 768x64x768 / 1000x64x1000，nsteps=20,out_period=10）：CUDA mean ≈ 4.73e10 / 4.95e10 / 4.29e10，OpenMP mean ≈ 4.87e10 / 5.08e10 / 5.15e10。
 - **补充形状测试：ny != 64 与非 2^n 立方体（完整 A100，AWAVE_KERNEL_MODE=1，mean SU/s）**：
   - 目的：验证实现不依赖立方体/幂次尺寸或固定 ny=64 的特例，且保持正确性与带宽饱和区间性能。
   - 256x96x256（nsteps=50,out_period=25）：CPU ≈ 2.97e8，CUDA ≈ 4.91e10，OpenMP ≈ 4.22e10（diff=0）。

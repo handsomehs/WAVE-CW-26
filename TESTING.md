@@ -121,7 +121,41 @@ Guidelines:
 - Increase `nsteps` for small shapes to reduce launch/overhead noise.
 - Always keep correctness checks enabled (default program behaviour).
 
-## 6) Interactive debugging (optional)
+## 6) GPU memory / OOM check for 1000^3 (allocation-only)
+
+Running the full `awave -shape 1000,1000,1000` is usually impractical because:
+- The driver constructs CPU + CUDA + OpenMP states (large host allocations).
+- It writes huge HDF5 outputs (CPU/CUDA/OpenMP each write `damp`, `sos`, and `u` fields).
+
+To answer the *GPU memory* question ("will this OOM on an A100 40GB?") without
+running the full simulation, use the small CUDA helper under `build-dev/`:
+
+Build once on the ASPP VM:
+
+```bash
+nvcc -O2 -std=c++17 -o build-dev/gpu_alloc_check build-dev/gpu_alloc_check.cu
+```
+
+Run on a full A100 (interactive container):
+
+```bash
+kgpu start -g 1 -w
+kgpu shell -a -g 1
+
+./build-dev/gpu_alloc_check 1000 1000 1000
+
+exit
+kgpu stop
+```
+
+Success criteria:
+- The program prints `OK: allocations succeeded.`
+- It reports the post-allocation free memory is still comfortably > 0.
+
+This checks only the dominant device allocations (padded `u` fields + compressed
+coefficients) for **CUDA+OpenMP simultaneously**.
+
+## 7) Interactive debugging (optional)
 
 If a job fails and you want to reproduce interactively:
 
@@ -138,7 +172,7 @@ exit
 kgpu stop
 ```
 
-## 7) After each tested change (local git only)
+## 8) After each tested change (local git only)
 
 1. Update `Completed.md` (what changed + why + test results).
 2. Update `report_content.md` (numbers/tables/figures you will use in the final report).
@@ -151,7 +185,7 @@ git commit -m "Test: <what> (shape=..., A100, diff=0)"
 
 No `git push` (per current workflow).
 
-## 8) Common failure modes
+## 9) Common failure modes
 
 - OpenMP silently runs on CPU:
   - Set `OMP_TARGET_OFFLOAD=MANDATORY` in your job env (already done in `run-*.yml` here).
