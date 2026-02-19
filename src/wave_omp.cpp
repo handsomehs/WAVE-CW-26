@@ -33,7 +33,6 @@ struct OmpImplementationData {
 
     double* d_prev = nullptr;
     double* d_now = nullptr;
-    double* d_next = nullptr;
     // `cs2(i,j,k)` depends only on k, and `damp(i,j,k)` depends only on (i,j).
     // Storing these compressed reduces device memory traffic.
     double* d_cs2_k = nullptr;    // size nz
@@ -52,7 +51,6 @@ struct OmpImplementationData {
         // Device-resident fields: keep on device for the whole simulation.
         d_prev = static_cast<double*>(omp_target_alloc(u_size * sizeof(double), device));
         d_now = static_cast<double*>(omp_target_alloc(u_size * sizeof(double), device));
-        d_next = static_cast<double*>(omp_target_alloc(u_size * sizeof(double), device));
         d_cs2_k = static_cast<double*>(omp_target_alloc(static_cast<std::size_t>(nz) * sizeof(double), device));
         d_damp_xy = static_cast<double*>(omp_target_alloc(static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * sizeof(double), device));
 
@@ -60,7 +58,6 @@ struct OmpImplementationData {
         // Initial H2D transfer for all inputs.
         omp_target_memcpy(d_prev, u.prev().data(), u_size * sizeof(double), 0, 0, device, host);
         omp_target_memcpy(d_now, u.now().data(), u_size * sizeof(double), 0, 0, device, host);
-        omp_target_memcpy(d_next, u.next().data(), u_size * sizeof(double), 0, 0, device, host);
         // Build compressed coefficient arrays on host, then transfer once.
         std::vector<double> cs2_k(static_cast<std::size_t>(nz));
         for (int k = 0; k < nz; ++k) {
@@ -89,7 +86,6 @@ struct OmpImplementationData {
     ~OmpImplementationData() {
         if (d_prev) omp_target_free(d_prev, device);
         if (d_now) omp_target_free(d_now, device);
-        if (d_next) omp_target_free(d_next, device);
         if (d_cs2_k) omp_target_free(d_cs2_k, device);
         if (d_damp_xy) omp_target_free(d_damp_xy, device);
    }
@@ -224,7 +220,6 @@ void OmpWaveSimulation::run(int n) {
     for (int step = 0; step < n; ++step) {
         double* u_prev = impl.d_prev;
         double* u_now = impl.d_now;
-        double* u_next = impl.d_next;
         double* d_cs2_k = impl.d_cs2_k;
         double* d_damp_xy = impl.d_damp_xy;
         int u_stride_x = impl.u_stride_x;
@@ -238,7 +233,7 @@ void OmpWaveSimulation::run(int n) {
             // 1) Interior (undamped): i=[nbl, nx-nbl), j=[nbl, ny-nbl).
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int ii = 0; ii < nx_inner; ++ii) {
                 for (int jj = 0; jj < ny_inner; ++jj) {
                     for (int k = 0; k < nz; ++k) {
@@ -252,7 +247,8 @@ void OmpWaveSimulation::run(int n) {
                                    + u_now[u_idx - 1] + u_now[u_idx + 1]
                                    - 6.0 * center;
                         double value = factor * d_cs2_k[k] * lap;
-                        u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+                        double prev = u_prev[u_idx];
+                        u_prev[u_idx] = 2.0 * center - prev + value;
                     }
                 }
             }
@@ -261,7 +257,7 @@ void OmpWaveSimulation::run(int n) {
             // by mapping i_in in [0, 2*nbl) to global i.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int i_in = 0; i_in < 2 * nbl; ++i_in) {
                 for (int j = 0; j < ny; ++j) {
                     for (int k = 0; k < nz; ++k) {
@@ -279,7 +275,8 @@ void OmpWaveSimulation::run(int n) {
                         double inv_den = 1.0 / (1.0 + d * dt);
                         double num = 1.0 - d * dt;
                         value *= inv_den;
-                        u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                        double prev = u_prev[u_idx];
+                        u_prev[u_idx] = 2.0 * inv_den * center - num * inv_den * prev + value;
                     }
                 }
             }
@@ -287,7 +284,7 @@ void OmpWaveSimulation::run(int n) {
             // 3) y boundary layers excluding the x boundary slabs.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int ii = 0; ii < nx_inner; ++ii) {
                 for (int j_in = 0; j_in < 2 * nbl; ++j_in) {
                     for (int k = 0; k < nz; ++k) {
@@ -306,7 +303,8 @@ void OmpWaveSimulation::run(int n) {
                         double inv_den = 1.0 / (1.0 + d * dt);
                         double num = 1.0 - d * dt;
                         value *= inv_den;
-                        u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                        double prev = u_prev[u_idx];
+                        u_prev[u_idx] = 2.0 * inv_den * center - num * inv_den * prev + value;
                     }
                 }
             }
@@ -314,7 +312,7 @@ void OmpWaveSimulation::run(int n) {
             // 1) i interior for all j: only y-boundary points are damped.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int ii = 0; ii < nx_inner; ++ii) {
                 for (int j = 0; j < ny; ++j) {
                     for (int k = 0; k < nz; ++k) {
@@ -328,14 +326,15 @@ void OmpWaveSimulation::run(int n) {
                                    - 6.0 * center;
                         double value = factor * d_cs2_k[k] * lap;
                         bool const is_yb = (j < nbl) || (j >= (ny - nbl));
+                        double prev = u_prev[u_idx];
                         if (!is_yb) {
-                            u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+                            u_prev[u_idx] = 2.0 * center - prev + value;
                         } else {
                             double d = d_damp_xy[i * ny + j];
                             double inv_den = 1.0 / (1.0 + d * dt);
                             double num = 1.0 - d * dt;
                             value *= inv_den;
-                            u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                            u_prev[u_idx] = 2.0 * inv_den * center - num * inv_den * prev + value;
                         }
                     }
                 }
@@ -344,7 +343,7 @@ void OmpWaveSimulation::run(int n) {
             // 2) x boundary layers (includes corners).
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int i_in = 0; i_in < 2 * nbl; ++i_in) {
                 for (int j = 0; j < ny; ++j) {
                     for (int k = 0; k < nz; ++k) {
@@ -362,7 +361,8 @@ void OmpWaveSimulation::run(int n) {
                         double inv_den = 1.0 / (1.0 + d * dt);
                         double num = 1.0 - d * dt;
                         value *= inv_den;
-                        u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                        double prev = u_prev[u_idx];
+                        u_prev[u_idx] = 2.0 * inv_den * center - num * inv_den * prev + value;
                     }
                 }
             }
@@ -371,7 +371,7 @@ void OmpWaveSimulation::run(int n) {
             // damping branch to reduce launch overhead.
             #pragma omp target teams distribute parallel for collapse(3) \
                 device(device) \
-                is_device_ptr(u_prev, u_now, u_next, d_cs2_k, d_damp_xy)
+                is_device_ptr(u_prev, u_now, d_cs2_k, d_damp_xy)
             for (int i = 0; i < nx; ++i) {
                 for (int j = 0; j < ny; ++j) {
                     for (int k = 0; k < nz; ++k) {
@@ -385,25 +385,27 @@ void OmpWaveSimulation::run(int n) {
                         double value = factor * d_cs2_k[k] * lap;
 
                         double d = d_damp_xy[i * ny + j];
+                        double prev = u_prev[u_idx];
                         if (d == 0.0) {
-                            u_next[u_idx] = 2.0 * center - u_prev[u_idx] + value;
+                            u_prev[u_idx] = 2.0 * center - prev + value;
                         } else {
                             double inv_den = 1.0 / (1.0 + d * dt);
                             double num = 1.0 - d * dt;
                             value *= inv_den;
-                            u_next[u_idx] = 2.0 * inv_den * center - num * inv_den * u_prev[u_idx] + value;
+                            u_prev[u_idx] = 2.0 * inv_den * center - num * inv_den * prev + value;
                         }
                     }
                 }
             }
         }
 
-        // Rotate device pointers; avoids device memcpy each step.
+        // In-place update: this step overwrites `d_prev` with u^{n+1}. Since the
+        // scheme only reads u_prev at the same grid point (no u_prev neighbours),
+        // it is safe to compute in-place and then swap the two buffers.
         // Keep the host-side time counter in sync for output and checking.
         auto* old_prev = impl.d_prev;
         impl.d_prev = impl.d_now;
-        impl.d_now = impl.d_next;
-        impl.d_next = old_prev;
+        impl.d_now = old_prev;
         u.advance();
     }
 }

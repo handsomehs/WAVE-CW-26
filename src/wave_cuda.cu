@@ -62,7 +62,6 @@ struct CudaImplementationData {
 
     double* d_prev = nullptr;
     double* d_now = nullptr;
-    double* d_next = nullptr;
     // `cs2(i,j,k)` depends only on k, and `damp(i,j,k)` depends only on (i,j).
     // Storing these compressed reduces device memory traffic.
     double* d_cs2_k = nullptr;    // size nz
@@ -86,14 +85,12 @@ struct CudaImplementationData {
         // Device-resident fields: keep on GPU for the whole simulation.
         CUDA_CHECK(cudaMalloc(&d_prev, u_size * sizeof(double)));
         CUDA_CHECK(cudaMalloc(&d_now, u_size * sizeof(double)));
-        CUDA_CHECK(cudaMalloc(&d_next, u_size * sizeof(double)));
         CUDA_CHECK(cudaMalloc(&d_cs2_k, static_cast<std::size_t>(nz) * sizeof(double)));
         CUDA_CHECK(cudaMalloc(&d_damp_xy, static_cast<std::size_t>(nx) * static_cast<std::size_t>(ny) * sizeof(double)));
 
         // Initial H2D transfer for all inputs.
         CUDA_CHECK(cudaMemcpyAsync(d_prev, u.prev().data(), u_size * sizeof(double), cudaMemcpyHostToDevice, stream));
         CUDA_CHECK(cudaMemcpyAsync(d_now, u.now().data(), u_size * sizeof(double), cudaMemcpyHostToDevice, stream));
-        CUDA_CHECK(cudaMemcpyAsync(d_next, u.next().data(), u_size * sizeof(double), cudaMemcpyHostToDevice, stream));
         // Build compressed coefficient arrays on host, then transfer once.
         std::vector<double> cs2_k(static_cast<std::size_t>(nz));
         for (int k = 0; k < nz; ++k) {
@@ -122,7 +119,6 @@ struct CudaImplementationData {
     ~CudaImplementationData() {
         if (d_prev) cudaFree(d_prev);
         if (d_now) cudaFree(d_now);
-        if (d_next) cudaFree(d_next);
         if (d_cs2_k) cudaFree(d_cs2_k);
         if (d_damp_xy) cudaFree(d_damp_xy);
         if (stream) cudaStreamDestroy(stream);
@@ -220,9 +216,9 @@ static void step_cpu(Params const& params, array3d const& cs2, array3d const& da
 
 // one-kernel update: each thread computes one point, 
 // branching on the damping field to apply the correct update.
-__global__ void step_kernel(double const* __restrict__ u_prev,
+__global__ void step_kernel(double const* u_prev,
                             double const* __restrict__ u_now,
-                            double* __restrict__ u_next,
+                            double* u_next,
                             double const* __restrict__ cs2_k,
                             double const* __restrict__ damp_xy,
                             int nx, int ny, int nz,
@@ -255,9 +251,9 @@ __global__ void step_kernel(double const* __restrict__ u_prev,
 
 // Interior update (no damping): the damping field is identically zero away from the
 // x/y boundary layers, so we can avoid reading it and remove the branch entirely.
-__global__ void step_kernel_interior(double const* __restrict__ u_prev,
+__global__ void step_kernel_interior(double const* u_prev,
                                      double const* __restrict__ u_now,
-                                     double* __restrict__ u_next,
+                                     double* u_next,
                                      double const* __restrict__ cs2_k,
                                      int nx_inner, int ny_inner, int nz,
                                      int u_stride_x, int u_stride_y,
@@ -288,9 +284,9 @@ __global__ void step_kernel_interior(double const* __restrict__ u_prev,
 //   i = (nx - nbl) + (i_in-nbl) for i_in >= nbl
 // This covers all x-boundary points (including corners), so the y-boundary kernel
 // below must exclude x-boundary i values to avoid double writes.
-__global__ void step_kernel_xbound(double const* __restrict__ u_prev,
+__global__ void step_kernel_xbound(double const* u_prev,
                                    double const* __restrict__ u_now,
-                                   double* __restrict__ u_next,
+                                   double* u_next,
                                    double const* __restrict__ cs2_k,
                                    double const* __restrict__ damp_xy,
                                    int nx, int ny, int nz,
@@ -322,9 +318,9 @@ __global__ void step_kernel_xbound(double const* __restrict__ u_prev,
 
 // Boundary update (with damping) on y boundary layers, excluding x-boundary slabs.
 // We combine the low and high y-slabs in the same way as the x-boundary kernel.
-__global__ void step_kernel_ybound(double const* __restrict__ u_prev,
+__global__ void step_kernel_ybound(double const* u_prev,
                                    double const* __restrict__ u_now,
-                                   double* __restrict__ u_next,
+                                   double* u_next,
                                    double const* __restrict__ cs2_k,
                                    double const* __restrict__ damp_xy,
                                    int nx_inner, int ny, int nz,
@@ -361,9 +357,9 @@ __global__ void step_kernel_ybound(double const* __restrict__ u_prev,
 // Rationale: the damping field is non-zero iff (i in x-boundary) OR (j in
 // y-boundary). This kernel runs only for i in the interior range, so it only
 // needs to apply damping for y-boundary j values.
-__global__ void step_kernel_core_ybound(double const* __restrict__ u_prev,
+__global__ void step_kernel_core_ybound(double const* u_prev,
                                         double const* __restrict__ u_now,
-                                        double* __restrict__ u_next,
+                                        double* u_next,
                                         double const* __restrict__ cs2_k,
                                         double const* __restrict__ damp_xy,
                                         int nx_inner, int ny, int nz,
@@ -471,7 +467,7 @@ void CudaWaveSimulation::run(int n) {
         if (mode == 3) {
             // 1) Interior (undamped) region.
             step_kernel_interior<<<grid_inner, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k,
                     nx_inner, ny_inner, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -481,7 +477,7 @@ void CudaWaveSimulation::run(int n) {
 
             // 2) x boundary layers (includes corners).
             step_kernel_xbound<<<grid_xb, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx, ny, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -491,7 +487,7 @@ void CudaWaveSimulation::run(int n) {
 
             // 3) y boundary layers excluding x boundary layers.
             step_kernel_ybound<<<grid_yb, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx_inner, ny, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -501,7 +497,7 @@ void CudaWaveSimulation::run(int n) {
         } else if (mode == 2) {
             // Two-kernel split: (interior + y-boundary) + x-boundary.
             step_kernel_core_ybound<<<grid_core, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx_inner, ny, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -510,7 +506,7 @@ void CudaWaveSimulation::run(int n) {
             CUDA_CHECK(cudaGetLastError());
 
             step_kernel_xbound<<<grid_xb, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx, ny, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -521,7 +517,7 @@ void CudaWaveSimulation::run(int n) {
             // Small-problem path: one kernel with the original per-point damping
             // branch to reduce launch overhead.
             step_kernel<<<grid_full, block_ijk, 0, impl.stream>>>(
-                    impl.d_prev, impl.d_now, impl.d_next,
+                    impl.d_prev, impl.d_now, impl.d_prev,
                     impl.d_cs2_k, impl.d_damp_xy,
                     nx, ny, nz,
                     impl.u_stride_x, impl.u_stride_y,
@@ -529,12 +525,11 @@ void CudaWaveSimulation::run(int n) {
             CUDA_CHECK(cudaGetLastError());
         }
 
-        // Rotate device pointers; avoids device memcpy each step.
+        // In-place update: this step overwrites `d_prev` with u^{n+1}. Since the
+        // scheme only reads u_prev at the same grid point (no u_prev neighbours),
+        // it is safe to compute in-place and then swap the two buffers.
         // Keep the host-side time counter in sync for output and checking.
-        auto* old_prev = impl.d_prev;
-        impl.d_prev = impl.d_now;
-        impl.d_now = impl.d_next;
-        impl.d_next = old_prev;
+        std::swap(impl.d_prev, impl.d_now);
         u.advance();
     }
 
