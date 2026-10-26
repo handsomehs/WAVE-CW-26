@@ -1,0 +1,50 @@
+{
+  "verified_at_utc": "2026-10-26T03:42:36.390162+00:00",
+  "source_snapshot_commit": "cb68c0518eb46e3c615529716b71a13c79f5468d",
+  "release_url": "https://github.com/handsomehs/WAVE-CW-26/releases/tag/server-archive-20261026",
+  "release_id": 423836589,
+  "release_assets": [
+    {
+      "name": "wave-cw-26-experiment-records-20261026.tar.zst",
+      "bytes": 132009964,
+      "sha256": "c3debf291b1c581531eafea77ec90d2f41e2132e5fcf45ed96e00ae95409ce93",
+      "asset_id": 676908204,
+      "download_sha256_verified": true
+    },
+    {
+      "name": "archive-manifest.json",
+      "bytes": 53035,
+      "sha256": "a1133a6dba474e9a6bf9ee1cd8e6cc9f28fdfa6138d0356f008892c2338d2a80",
+      "asset_id": 676908209,
+      "download_sha256_verified": true
+    },
+    {
+      "name": "FILES.sha256",
+      "bytes": 2770,
+      "sha256": "71ea437ddef386c0503fcda455e85f26cb6c6dd28f94dc270995d1f5b2f171b1",
+      "asset_id": 676908205,
+      "download_sha256_verified": true
+    },
+    {
+      "name": "README.md",
+      "bytes": 2099,
+      "sha256": "656136438fd318be37850c695b84a3d9eaf8b7389253695b80db302ea8b85f1d",
+      "asset_id": 676908203,
+      "download_sha256_verified": true
+    },
+    {
+      "name": "SHA256SUMS.assets",
+      "bytes": 356,
+      "sha256": "72176833be3e3cfc77f482864f496c7666fac5e8cb9621913498ff1777cbc188",
+      "asset_id": 676908207,
+      "download_sha256_verified": true
+    }
+  ],
+  "archive_files_verified": 24,
+  "archive_uncompressed_bytes_verified": 356678265,
+  "verification_method": "Every asset was independently downloaded by asset ID, then size and SHA256 were compared with the upload source. Every file in the downloaded tar archive was streamed and checked against the downloaded per-file manifest, which was initially checked against the source audit snapshot.",
+  "scope": "Located coursework records and source history. External datasets, WDS PVC data, registry images and an unavailable original MLaS PDF are not supplied by this backup.",
+  "release_published": true,
+  "release_published_at": "2026-10-26T03:43:39Z",
+  "release_target_commitish": "0426fd9106d49115e6d136e13b8cfa523f4091af"
+}
