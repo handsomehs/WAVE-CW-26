@@ -1,0 +1,1155 @@
+{
+  "project": "wave-cw-26",
+  "snapshot_date": "2026-10-26",
+  "source_commit": "cb68c0518eb46e3c615529716b71a13c79f5468d",
+  "files": [
+    {
+      "path": "Documents/awave-large-a100-9pptg.log",
+      "archive_path": "wave-cw-26/Documents/awave-large-a100-9pptg.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "awave-ncu-20260206-093818.ncu-rep",
+      "archive_path": "wave-cw-26/awave-ncu-20260206-093818.ncu-rep",
+      "bytes": 56909,
+      "sha256": "1148d9812e65ef911c8c57484c4772e7bff59c86ae09244d9aee1c95e7a57c25"
+    },
+    {
+      "path": "awave-ncu-20260206-095223.ncu-rep",
+      "archive_path": "wave-cw-26/awave-ncu-20260206-095223.ncu-rep",
+      "bytes": 56909,
+      "sha256": "b2c1811b3d3c99d26d7c7e7c5a0096fb5ba342e232256b1801e047601e0e39b6"
+    },
+    {
+      "path": "awave-ncu-20260206-095915.ncu-rep",
+      "archive_path": "wave-cw-26/awave-ncu-20260206-095915.ncu-rep",
+      "bytes": 56909,
+      "sha256": "f3674a9da37da4fa11d9169ab13f0145d6d2b14c9022998a0d468edd8e00a81a"
+    },
+    {
+      "path": "awave-nsys-1000x64x1000-20260206-102717.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-1000x64x1000-20260206-102717.nsys-rep",
+      "bytes": 53071128,
+      "sha256": "08acc7c77f9fe3a3e76c67966aff288cdf98eb21d75afbfe979ebe24a681955f"
+    },
+    {
+      "path": "awave-nsys-1000x64x1000-20260206-102717.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-1000x64x1000-20260206-102717.sqlite",
+      "bytes": 188260352,
+      "sha256": "6ba0591736a293598d0ff084e9c24db02ae142ddefea8cfcedd3e523cc522869"
+    },
+    {
+      "path": "awave-nsys-128-m2-20260206-120906.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-128-m2-20260206-120906.nsys-rep",
+      "bytes": 1189664,
+      "sha256": "be4eb08a26171e76ab4817ec402ce9b5fa554bac807d58a7777c40f6f957e60c"
+    },
+    {
+      "path": "awave-nsys-128-m2-20260206-143505.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-128-m2-20260206-143505.nsys-rep",
+      "bytes": 1202024,
+      "sha256": "df7c389da7249aa22ada1f22334665f43a653c28e2cc4d4fe76f48905aa56035"
+    },
+    {
+      "path": "awave-nsys-128-m2-20260206-143505.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-128-m2-20260206-143505.sqlite",
+      "bytes": 4403200,
+      "sha256": "e88831c51ceee48bdf03e3f5e42ea33ed8c5c37605b5fd8560aae262ddb56d75"
+    },
+    {
+      "path": "awave-nsys-128-m3-20260206-120912.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-128-m3-20260206-120912.nsys-rep",
+      "bytes": 1211963,
+      "sha256": "3176609cc5b5e829f75d47787a4c76f99e71943a1e96b4338f81b922a7965b75"
+    },
+    {
+      "path": "awave-nsys-128-m3-20260206-143511.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-128-m3-20260206-143511.nsys-rep",
+      "bytes": 1207138,
+      "sha256": "4198b3b52fc2b8b33936787b463ca2d36fdcaa8e0a7e45352110d770aecc7b25"
+    },
+    {
+      "path": "awave-nsys-128-m3-20260206-143511.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-128-m3-20260206-143511.sqlite",
+      "bytes": 4374528,
+      "sha256": "475c546867e30197efa13e8a63450345d738bf2ac584ab9b62fe675689f0b390"
+    },
+    {
+      "path": "awave-nsys-20260206-093807.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-20260206-093807.nsys-rep",
+      "bytes": 9691155,
+      "sha256": "a312a876aec4bd076d6026d4942629c9b79c7eb228be846db3b403bfcd1d75da"
+    },
+    {
+      "path": "awave-nsys-20260206-095213.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-20260206-095213.nsys-rep",
+      "bytes": 9724530,
+      "sha256": "9a49a5a5e071b8dfea15b761d1b243cb6c8d19849909f909d45db14148727ad0"
+    },
+    {
+      "path": "awave-nsys-20260206-095213.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-20260206-095213.sqlite",
+      "bytes": 33955840,
+      "sha256": "db3cbe72c663b5a519c1be7cc942d15d780b70f201949815308046c53a2905d2"
+    },
+    {
+      "path": "awave-nsys-20260206-095903.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-20260206-095903.nsys-rep",
+      "bytes": 9710934,
+      "sha256": "cab6cdb30a9ceda8cff341009337c7ac6731bc8e58932be48f6d82d7ae6aa05e"
+    },
+    {
+      "path": "awave-nsys-20260206-095903.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-20260206-095903.sqlite",
+      "bytes": 33730560,
+      "sha256": "34f42336710957b71e2cfdc49e422cc16a01a3fdca18617cfa881a2c8d84d218"
+    },
+    {
+      "path": "awave-nsys-32-20260206-101912.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-101912.nsys-rep",
+      "bytes": 290772,
+      "sha256": "4c975d625c3f9cd2d4920d2604e110af0d4433eb8df3b6f5d9bb4946d3fb45ec"
+    },
+    {
+      "path": "awave-nsys-32-20260206-101912.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-101912.sqlite",
+      "bytes": 1351680,
+      "sha256": "b24e8a5724856de0c497db245d88a38a5c439073fbdfe4268a6353330b927321"
+    },
+    {
+      "path": "awave-nsys-32-20260206-103850.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-103850.nsys-rep",
+      "bytes": 291372,
+      "sha256": "97340c987b46950acc9a0d1fe6519ef02b8ab69c276bbd3eab0b0a6ee9d2394b"
+    },
+    {
+      "path": "awave-nsys-32-20260206-103850.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-103850.sqlite",
+      "bytes": 1351680,
+      "sha256": "38c1f4d60b18892fe6b442680e9f243c1fa03dee569ce4ff2c7682c83060bb09"
+    },
+    {
+      "path": "awave-nsys-32-20260206-112413.nsys-rep",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-112413.nsys-rep",
+      "bytes": 235312,
+      "sha256": "fd128be48e647ea16a8b325472c5b2b91454c442b9341dc27a93027955d1529b"
+    },
+    {
+      "path": "awave-nsys-32-20260206-112413.sqlite",
+      "archive_path": "wave-cw-26/awave-nsys-32-20260206-112413.sqlite",
+      "bytes": 1249280,
+      "sha256": "11abd4aa1565ac8dc84776df15c2f99e2fa6c851c79ffc2434c2332e1000ece8"
+    },
+    {
+      "path": "build-dev/gpu_alloc_check.cu",
+      "archive_path": "wave-cw-26/build-dev/gpu_alloc_check.cu",
+      "bytes": 4426,
+      "sha256": "3cef6e58a5bb0a3f793f038f4a97f672af0fca47c5e8c6b734a1cdd934a378e1"
+    }
+  ],
+  "excluded_from_archive": [
+    {
+      "path": ".gitignore",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 88
+    },
+    {
+      "path": "ASPP_CW1.pdf",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 227772
+    },
+    {
+      "path": "Completed.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 25508
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/AchievedOccupancy.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 7524
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/C2CLink.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 984
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/CPIStall.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 21594
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Compute.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2060
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/ComputeWorkloadAnalysis.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 13887
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/FPInstructions.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8403
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/HighPipeUtilization.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 24388
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/InstructionStatistics.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2714
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/IssueSlotUtilization.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5893
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/LaunchStatistics.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 19047
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/LaunchStatistics.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 4410
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Memory.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2514
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryApertureUsage.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8934
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryCacheAccessPattern.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 17169
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryL2Compression.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8688
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryWorkloadAnalysis.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3952
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryWorkloadAnalysis_Chart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3550
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MemoryWorkloadAnalysis_Tables.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 4120
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/MetricAggregation.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 10274
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/NumaAffinity.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1008
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/NvRules.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 109216
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Nvlink.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3618
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Nvlink_Tables.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 427
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Nvlink_Topology.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 390
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/Occupancy.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 10556
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/PCSamplingData.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2833
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/PMSamplingData.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 4167
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/PmSampling.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 89481
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/PmSampling_WarpStates.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8302
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/RequestedMetrics.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 9290
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SchedulerStatistics.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2326
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SharedMemoryConflicts.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 6221
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SlowPipeLimiter.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5161
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SourceCounters.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 15366
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 10387
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3672
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_HierarchicalDoubleRooflineChart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 12493
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_HierarchicalHalfRooflineChart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 14080
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_HierarchicalSingleRooflineChart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 12479
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_HierarchicalTensorRooflineChart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1418521
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_Roofline.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8974
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/SpeedOfLight_RooflineChart.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 10446
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/TableBuilder.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 12290
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/TheoreticalOccupancy.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8451
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/ThreadDivergence.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 7027
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/UncoalescedAccess.chart",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 156
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/UncoalescedAccess.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 7285
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/UncoalescedSharedAccess.chart",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 138
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/UncoalescedSharedAccess.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 7619
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/WarpStateStatistics.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 4622
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/WorkloadDistribution.section",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5090
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/WorkloadImbalance.py",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8719
+    },
+    {
+      "path": "Documents/NVIDIA Nsight Compute/2025.3.0/Sections/version.txt",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 17
+    },
+    {
+      "path": "Intro.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1795
+    },
+    {
+      "path": "README.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 9153
+    },
+    {
+      "path": "TESTING.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 6200
+    },
+    {
+      "path": "build-dev/CMakeCache.txt",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 16222
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CMakeCUDACompiler.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 4487
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CMakeCXXCompiler.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5394
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CMakeDetermineCompilerABI_CUDA.bin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 983496
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CMakeDetermineCompilerABI_CXX.bin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 17128
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CMakeSystem.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 398
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/CMakeCUDACompilerId.cu",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 12067
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/a.out",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 983760
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cpp1.ii",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1261344
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cpp4.ii",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1136409
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.c",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2220
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1124997
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.gpu",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 6227
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.cudafe1.stub.c",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 740
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.fatbin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1696
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.fatbin.c",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5156
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.module_id",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 44
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 7232
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.ptx",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 201
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/CMakeCUDACompilerId.sm_75.cubin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1464
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/a_dlink.fatbin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1832
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/a_dlink.fatbin.c",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 5558
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/a_dlink.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3792
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/a_dlink.reg.c",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 32
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCUDA/tmp/a_dlink.sm_75.cubin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1752
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCXX/CMakeCXXCompilerId.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 26804
+    },
+    {
+      "path": "build-dev/CMakeFiles/3.28.3/CompilerIdCXX/a.out",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 17304
+    },
+    {
+      "path": "build-dev/CMakeFiles/CMakeConfigureLog.yaml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 166753
+    },
+    {
+      "path": "build-dev/CMakeFiles/CMakeDirectoryInformation.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 704
+    },
+    {
+      "path": "build-dev/CMakeFiles/FindOpenMP/ompver_CXX.bin",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 55776
+    },
+    {
+      "path": "build-dev/CMakeFiles/Makefile.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 8711
+    },
+    {
+      "path": "build-dev/CMakeFiles/Makefile2",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3662
+    },
+    {
+      "path": "build-dev/CMakeFiles/TargetDirectories.txt",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 280
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/DependInfo.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1696
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/build.make",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 14915
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/cmake_clean.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 757
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/compiler_depend.internal",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 95096
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/compiler_depend.make",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 124433
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/compiler_depend.ts",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 112
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/depend.make",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 89
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/flags.make",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 775
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/h5io.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 169928
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/h5io.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 21581
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/includes_CUDA.rsp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 34
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/init_sos.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 15200
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/init_sos.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 11532
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/link.txt",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 903
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/main.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 275656
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/main.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 23874
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/progress.make",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 169
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/ufield.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 19816
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/ufield.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 18854
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_cpu.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 211496
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_cpu.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 20595
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_cuda.cu.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 378856
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_cuda.cu.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 21932
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_omp.cpp.o",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 292056
+    },
+    {
+      "path": "build-dev/CMakeFiles/awave.dir/wave_omp.cpp.o.d",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 20185
+    },
+    {
+      "path": "build-dev/CMakeFiles/cmake.check_cache",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 85
+    },
+    {
+      "path": "build-dev/CMakeFiles/hdf5/a.out",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 3256328
+    },
+    {
+      "path": "build-dev/CMakeFiles/hdf5/cmake_hdf5_test.cxx",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 386
+    },
+    {
+      "path": "build-dev/CMakeFiles/progress.marks",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 2
+    },
+    {
+      "path": "build-dev/Makefile",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 9535
+    },
+    {
+      "path": "build-dev/awave",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1910280
+    },
+    {
+      "path": "build-dev/cmake_install.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 1705
+    },
+    {
+      "path": "build-dev/gpu_alloc_check",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "MISSING_FROM_REMOTE_GIT",
+      "bytes": 982864
+    },
+    {
+      "path": "draft_plan.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 11513
+    },
+    {
+      "path": "make_submission.sh",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 3496
+    },
+    {
+      "path": "plan.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 6106
+    },
+    {
+      "path": "profile-ncu.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1286
+    },
+    {
+      "path": "profile-nsys-1000x64x1000.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1021
+    },
+    {
+      "path": "profile-nsys-128-m2-m3.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1284
+    },
+    {
+      "path": "profile-nsys-32.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 988
+    },
+    {
+      "path": "profile-nsys.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 977
+    },
+    {
+      "path": "report.tex",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 21643
+    },
+    {
+      "path": "report_content.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 15110
+    },
+    {
+      "path": "report_writing.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 13596
+    },
+    {
+      "path": "reportold.tex",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 21705
+    },
+    {
+      "path": "run-correct-mig-mode2.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1116
+    },
+    {
+      "path": "run-correct-mig.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 918
+    },
+    {
+      "path": "run-dxdt-a100.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1487
+    },
+    {
+      "path": "run-extra-a100.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1451
+    },
+    {
+      "path": "run-large-a100.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1219
+    },
+    {
+      "path": "run-perf-a100-128.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 899
+    },
+    {
+      "path": "run-perf-a100-256-20.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 906
+    },
+    {
+      "path": "run-perf-a100.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 893
+    },
+    {
+      "path": "run-sweep-a100-kernel-modes.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 2005
+    },
+    {
+      "path": "run-sweep-a100.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1366
+    },
+    {
+      "path": "run.yml",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 802
+    },
+    {
+      "path": "src/ASPP.cmake",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1678
+    },
+    {
+      "path": "src/CMakeLists.txt",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1222
+    },
+    {
+      "path": "src/h5io.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 23839
+    },
+    {
+      "path": "src/h5io.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1309
+    },
+    {
+      "path": "src/init_sos.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1271
+    },
+    {
+      "path": "src/init_sos.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 574
+    },
+    {
+      "path": "src/main.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 9139
+    },
+    {
+      "path": "src/ndarray.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 6012
+    },
+    {
+      "path": "src/params.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1464
+    },
+    {
+      "path": "src/ufield.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 539
+    },
+    {
+      "path": "src/ufield.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1002
+    },
+    {
+      "path": "src/util.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1382
+    },
+    {
+      "path": "src/wave_cpu.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 5763
+    },
+    {
+      "path": "src/wave_cpu.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1641
+    },
+    {
+      "path": "src/wave_cuda.cu",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 23852
+    },
+    {
+      "path": "src/wave_cuda.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1157
+    },
+    {
+      "path": "src/wave_omp.cpp",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 19124
+    },
+    {
+      "path": "src/wave_omp.h",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 1141
+    },
+    {
+      "path": "可能的测试运行流程.md",
+      "reason": "Already in Git or rebuildable cache, tool installation, or local editor settings; see original audit coverage",
+      "original_git_coverage": "HEAD",
+      "bytes": 7191
+    }
+  ]
+}
